@@ -17,6 +17,9 @@
 		"TUTORIAL_LS_IncrementalCopyDB_password": {
 			"value": ""
 		},
+		"LS_ASQL_Movies_Git_password": {
+			"value": ""
+		},
 		"LS_ABLB_mikalaip_properties_typeProperties_sasUri_secretName": {
 			"value": "SAS-URL-Secret"
 		},
@@ -63,6 +66,15 @@
 			"value": "IncrementalCopyDB"
 		},
 		"TUTORIAL_LS_IncrementalCopyDB_properties_typeProperties_userName": {
+			"value": "mikalaip-admin"
+		},
+		"LS_ASQL_Movies_Git_properties_typeProperties_server": {
+			"value": "azure-mentoring-mikalaip.database.windows.net"
+		},
+		"LS_ASQL_Movies_Git_properties_typeProperties_database": {
+			"value": "movies"
+		},
+		"LS_ASQL_Movies_Git_properties_typeProperties_userName": {
 			"value": "mikalaip-admin"
 		},
 		"containerUri": {

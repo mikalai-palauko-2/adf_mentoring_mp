@@ -23,6 +23,10 @@
 			"type": "secureString",
 			"metadata": "Secure string for 'password' of 'TUTORIAL_LS_IncrementalCopyDB'"
 		},
+		"LS_ASQL_Movies_Git_password": {
+			"type": "secureString",
+			"metadata": "Secure string for 'password' of 'LS_ASQL_Movies_Git'"
+		},
 		"LS_ADLS_mikalaip_properties_typeProperties_url": {
 			"type": "string",
 			"defaultValue": "https://azurementoringdatalake22.dfs.core.windows.net/"
@@ -52,6 +56,18 @@
 			"defaultValue": "IncrementalCopyDB"
 		},
 		"TUTORIAL_LS_IncrementalCopyDB_properties_typeProperties_userName": {
+			"type": "string",
+			"defaultValue": "mikalaip-admin"
+		},
+		"LS_ASQL_Movies_Git_properties_typeProperties_server": {
+			"type": "string",
+			"defaultValue": "azure-mentoring-mikalaip.database.windows.net"
+		},
+		"LS_ASQL_Movies_Git_properties_typeProperties_database": {
+			"type": "string",
+			"defaultValue": "movies"
+		},
+		"LS_ASQL_Movies_Git_properties_typeProperties_userName": {
 			"type": "string",
 			"defaultValue": "mikalaip-admin"
 		}
@@ -253,6 +269,28 @@
 			"properties": {
 				"type": "SelfHosted",
 				"typeProperties": {}
+			},
+			"dependsOn": []
+		},
+		{
+			"name": "[concat(parameters('factoryName'), '/LS_ASQL_Movies_Git')]",
+			"type": "Microsoft.DataFactory/factories/linkedServices",
+			"apiVersion": "2018-06-01",
+			"properties": {
+				"annotations": [],
+				"type": "AzureSqlDatabase",
+				"typeProperties": {
+					"server": "[parameters('LS_ASQL_Movies_Git_properties_typeProperties_server')]",
+					"database": "[parameters('LS_ASQL_Movies_Git_properties_typeProperties_database')]",
+					"encrypt": "mandatory",
+					"trustServerCertificate": false,
+					"authenticationType": "SQL",
+					"userName": "[parameters('LS_ASQL_Movies_Git_properties_typeProperties_userName')]",
+					"password": {
+						"type": "SecureString",
+						"value": "[parameters('LS_ASQL_Movies_Git_password')]"
+					}
+				}
 			},
 			"dependsOn": []
 		},
@@ -672,56 +710,6 @@
 						"fileSystem": "raw"
 					}
 				}
-			},
-			"dependsOn": [
-				"[concat(variables('factoryId'), '/linkedServices/LS_ADLS_mikalaip')]"
-			]
-		},
-		{
-			"name": "[concat(parameters('factoryName'), '/DS_ADLS_Ratings')]",
-			"type": "Microsoft.DataFactory/factories/datasets",
-			"apiVersion": "2018-06-01",
-			"properties": {
-				"linkedServiceName": {
-					"referenceName": "LS_ADLS_mikalaip",
-					"type": "LinkedServiceReference"
-				},
-				"parameters": {
-					"FileName": {
-						"type": "string"
-					}
-				},
-				"annotations": [],
-				"type": "DelimitedText",
-				"typeProperties": {
-					"location": {
-						"type": "AzureBlobFSLocation",
-						"fileName": {
-							"value": "@dataset().FileName",
-							"type": "Expression"
-						},
-						"folderPath": "movies",
-						"fileSystem": "raw"
-					},
-					"columnDelimiter": ",",
-					"escapeChar": "\\",
-					"firstRowAsHeader": true,
-					"quoteChar": "\""
-				},
-				"schema": [
-					{
-						"name": "cast",
-						"type": "String"
-					},
-					{
-						"name": "crew",
-						"type": "String"
-					},
-					{
-						"name": "id",
-						"type": "String"
-					}
-				]
 			},
 			"dependsOn": [
 				"[concat(variables('factoryId'), '/linkedServices/LS_ADLS_mikalaip')]"

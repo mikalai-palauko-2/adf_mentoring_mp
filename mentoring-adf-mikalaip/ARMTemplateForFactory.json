@@ -23,6 +23,10 @@
 			"type": "secureString",
 			"metadata": "Secure string for 'password' of 'TUTORIAL_LS_IncrementalCopyDB'"
 		},
+		"LS_ASQL_Movies_Git_password": {
+			"type": "secureString",
+			"metadata": "Secure string for 'password' of 'LS_ASQL_Movies_Git'"
+		},
 		"LS_ABLB_mikalaip_properties_typeProperties_sasUri_secretName": {
 			"type": "string",
 			"defaultValue": "SAS-URL-Secret"
@@ -84,6 +88,18 @@
 			"defaultValue": "IncrementalCopyDB"
 		},
 		"TUTORIAL_LS_IncrementalCopyDB_properties_typeProperties_userName": {
+			"type": "string",
+			"defaultValue": "mikalaip-admin"
+		},
+		"LS_ASQL_Movies_Git_properties_typeProperties_server": {
+			"type": "string",
+			"defaultValue": "azure-mentoring-mikalaip.database.windows.net"
+		},
+		"LS_ASQL_Movies_Git_properties_typeProperties_database": {
+			"type": "string",
+			"defaultValue": "movies"
+		},
+		"LS_ASQL_Movies_Git_properties_typeProperties_userName": {
 			"type": "string",
 			"defaultValue": "mikalaip-admin"
 		}
@@ -8381,6 +8397,28 @@
 				"[concat(variables('factoryId'), '/datasets/DS_ASQL_DataMart_FactOnlinePurchase')]",
 				"[concat(variables('factoryId'), '/datasets/DS_ASQL_DataMart_FactOnlinePurchase_MonthlySnapshot')]"
 			]
+		},
+		{
+			"name": "[concat(parameters('factoryName'), '/LS_ASQL_Movies_Git')]",
+			"type": "Microsoft.DataFactory/factories/linkedServices",
+			"apiVersion": "2018-06-01",
+			"properties": {
+				"annotations": [],
+				"type": "AzureSqlDatabase",
+				"typeProperties": {
+					"server": "[parameters('LS_ASQL_Movies_Git_properties_typeProperties_server')]",
+					"database": "[parameters('LS_ASQL_Movies_Git_properties_typeProperties_database')]",
+					"encrypt": "mandatory",
+					"trustServerCertificate": false,
+					"authenticationType": "SQL",
+					"userName": "[parameters('LS_ASQL_Movies_Git_properties_typeProperties_userName')]",
+					"password": {
+						"type": "SecureString",
+						"value": "[parameters('LS_ASQL_Movies_Git_password')]"
+					}
+				}
+			},
+			"dependsOn": []
 		}
 	]
 }

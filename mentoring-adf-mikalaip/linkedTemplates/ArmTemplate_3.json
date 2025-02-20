@@ -7,6 +7,10 @@
 			"metadata": "Data Factory name",
 			"defaultValue": "mentoring-adf-mikalaip"
 		},
+		"LS_ABLB_online_properties_typeProperties_sasUri_secretName": {
+			"type": "string",
+			"defaultValue": "SAS-URL-online"
+		},
 		"LS_ASQL_DataMart_properties_typeProperties_server": {
 			"type": "string",
 			"defaultValue": "azure-mentoring-mikalaip.database.windows.net"
@@ -36,6 +40,26 @@
 		"factoryId": "[concat('Microsoft.DataFactory/factories/', parameters('factoryName'))]"
 	},
 	"resources": [
+		{
+			"name": "[concat(parameters('factoryName'), '/LS_ABLB_online')]",
+			"type": "Microsoft.DataFactory/factories/linkedServices",
+			"apiVersion": "2018-06-01",
+			"properties": {
+				"annotations": [],
+				"type": "AzureBlobStorage",
+				"typeProperties": {
+					"sasUri": {
+						"type": "AzureKeyVaultSecret",
+						"store": {
+							"referenceName": "LS_KV_mikalaip",
+							"type": "LinkedServiceReference"
+						},
+						"secretName": "[parameters('LS_ABLB_online_properties_typeProperties_sasUri_secretName')]"
+					}
+				}
+			},
+			"dependsOn": []
+		},
 		{
 			"name": "[concat(parameters('factoryName'), '/LS_ASQL_DataMart')]",
 			"type": "Microsoft.DataFactory/factories/linkedServices",
@@ -3126,7 +3150,9 @@
 				},
 				"schema": {}
 			},
-			"dependsOn": []
+			"dependsOn": [
+				"[concat(variables('factoryId'), '/linkedServices/LS_ABLB_online')]"
+			]
 		},
 		{
 			"name": "[concat(parameters('factoryName'), '/DS_ABLB_online_file_param')]",
@@ -3156,7 +3182,9 @@
 				},
 				"schema": {}
 			},
-			"dependsOn": []
+			"dependsOn": [
+				"[concat(variables('factoryId'), '/linkedServices/LS_ABLB_online')]"
+			]
 		},
 		{
 			"name": "[concat(parameters('factoryName'), '/DS_ASQL_DataMart_DimMovie')]",
@@ -3448,44 +3476,6 @@
 			},
 			"dependsOn": [
 				"[concat(variables('factoryId'), '/linkedServices/LS_SQL_CinemaTickets')]"
-			]
-		},
-		{
-			"name": "[concat(parameters('factoryName'), '/MetadataDrivenCopyTask_7vx_DestinationDS')]",
-			"type": "Microsoft.DataFactory/factories/datasets",
-			"apiVersion": "2018-06-01",
-			"properties": {
-				"linkedServiceName": {
-					"referenceName": "LS_ASQL_DataMart",
-					"type": "LinkedServiceReference"
-				},
-				"parameters": {
-					"cw_schema": {
-						"type": "String"
-					},
-					"cw_table": {
-						"type": "String"
-					}
-				},
-				"folder": {
-					"name": "MetadataDrivenCopyTask_7vx_20250203"
-				},
-				"annotations": [],
-				"type": "AzureSqlTable",
-				"schema": [],
-				"typeProperties": {
-					"schema": {
-						"value": "@dataset().cw_schema",
-						"type": "Expression"
-					},
-					"table": {
-						"value": "@dataset().cw_table",
-						"type": "Expression"
-					}
-				}
-			},
-			"dependsOn": [
-				"[concat(variables('factoryId'), '/linkedServices/LS_ASQL_DataMart')]"
 			]
 		}
 	]
