@@ -1,0 +1,2301 @@
+{
+	"$schema": "http://schema.management.azure.com/schemas/2015-01-01/deploymentTemplate.json#",
+	"contentVersion": "1.0.0.0",
+	"parameters": {
+		"factoryName": {
+			"type": "string",
+			"metadata": "Data Factory name",
+			"defaultValue": "mentoring-adf-mikalaip"
+		}
+	},
+	"variables": {
+		"factoryId": "[concat('Microsoft.DataFactory/factories/', parameters('factoryName'))]"
+	},
+	"resources": [
+		{
+			"name": "[concat(parameters('factoryName'), '/PL_Module_11_Email_Notification')]",
+			"type": "Microsoft.DataFactory/factories/pipelines",
+			"apiVersion": "2018-06-01",
+			"properties": {
+				"activities": [
+					{
+						"name": "Get LogicApp URL",
+						"type": "WebActivity",
+						"dependsOn": [],
+						"policy": {
+							"timeout": "0.12:00:00",
+							"retry": 0,
+							"retryIntervalInSeconds": 30,
+							"secureOutput": false,
+							"secureInput": false
+						},
+						"userProperties": [],
+						"typeProperties": {
+							"method": "GET",
+							"headers": {},
+							"url": {
+								"value": "@concat(pipeline().globalParameters.Global_LogicAppWorkflowURL, '?api-version=7.0')",
+								"type": "Expression"
+							},
+							"authentication": {
+								"type": "MSI",
+								"resource": "https://vault.azure.net"
+							}
+						}
+					},
+					{
+						"name": "Trigger LogicApp on Success",
+						"type": "WebActivity",
+						"dependsOn": [
+							{
+								"activity": "Get LogicApp URL",
+								"dependencyConditions": [
+									"Succeeded"
+								]
+							},
+							{
+								"activity": "Execute PL_Module_9_Metadata-driven_ETL",
+								"dependencyConditions": [
+									"Succeeded"
+								]
+							}
+						],
+						"policy": {
+							"timeout": "0.12:00:00",
+							"retry": 0,
+							"retryIntervalInSeconds": 30,
+							"secureOutput": false,
+							"secureInput": false
+						},
+						"userProperties": [],
+						"typeProperties": {
+							"method": "POST",
+							"headers": {},
+							"url": {
+								"value": "@activity('Get LogicApp URL').output.value",
+								"type": "Expression"
+							},
+							"body": {
+								"value": "{\n    \"message\" : \"Data Factory: @{pipeline().DataFactory}.\n    Pipeline Run ID: @{pipeline().RunId}.\",\n    \"pipelineName\" : \"@{pipeline().Pipeline}\",\n    \"pipelineStatus\" : \"@{activity('Execute PL_Module_9_Metadata-driven_ETL').status}\",\n    \"receiver\" : \"@{pipeline().parameters.receiver}\"\n}",
+								"type": "Expression"
+							}
+						}
+					},
+					{
+						"name": "Execute PL_Module_9_Metadata-driven_ETL",
+						"type": "ExecutePipeline",
+						"dependsOn": [],
+						"policy": {
+							"secureInput": false
+						},
+						"userProperties": [],
+						"typeProperties": {
+							"pipeline": {
+								"referenceName": "PL_Module_9_Metadata-driven_ETL",
+								"type": "PipelineReference"
+							},
+							"waitOnCompletion": true,
+							"parameters": {}
+						}
+					},
+					{
+						"name": "Trigger LogicApp on Failure",
+						"type": "WebActivity",
+						"dependsOn": [
+							{
+								"activity": "Get LogicApp URL",
+								"dependencyConditions": [
+									"Succeeded"
+								]
+							},
+							{
+								"activity": "Execute PL_Module_9_Metadata-driven_ETL",
+								"dependencyConditions": [
+									"Failed"
+								]
+							}
+						],
+						"policy": {
+							"timeout": "0.12:00:00",
+							"retry": 0,
+							"retryIntervalInSeconds": 30,
+							"secureOutput": false,
+							"secureInput": false
+						},
+						"userProperties": [],
+						"typeProperties": {
+							"method": "POST",
+							"headers": {},
+							"url": {
+								"value": "@activity('Get LogicApp URL').output.value",
+								"type": "Expression"
+							},
+							"body": {
+								"value": "{\n    \"message\" : \"Data Factory: @{pipeline().DataFactory}.\n    Pipeline Run ID: @{pipeline().RunId}.    \n    Errors encountered: @{activity('Execute PL_Module_9_Metadata-driven_ETL').error.message}\",\n    \"pipelineName\" : \"@{pipeline().Pipeline}\",\n    \"pipelineStatus\" : \"@{activity('Execute PL_Module_9_Metadata-driven_ETL').status}\",\n    \"receiver\" : \"@{pipeline().parameters.receiver}\"\n}",
+								"type": "Expression"
+							}
+						}
+					}
+				],
+				"policy": {
+					"elapsedTimeMetric": {}
+				},
+				"parameters": {
+					"receiver": {
+						"type": "string",
+						"defaultValue": "mikalai_palauko@epam.com"
+					}
+				},
+				"variables": {
+					"DebugVariableValue": {
+						"type": "String"
+					},
+					"NewVariable": {
+						"type": "String"
+					}
+				},
+				"annotations": [],
+				"lastPublishTime": "2025-02-17T14:57:01Z"
+			},
+			"dependsOn": []
+		},
+		{
+			"name": "[concat(parameters('factoryName'), '/PL_Module_6_Incremental_Copy')]",
+			"type": "Microsoft.DataFactory/factories/pipelines",
+			"apiVersion": "2018-06-01",
+			"properties": {
+				"activities": [
+					{
+						"name": "Lookup - NewWatermark",
+						"type": "Lookup",
+						"dependsOn": [],
+						"policy": {
+							"timeout": "0.12:00:00",
+							"retry": 0,
+							"retryIntervalInSeconds": 30,
+							"secureOutput": false,
+							"secureInput": false
+						},
+						"userProperties": [],
+						"typeProperties": {
+							"source": {
+								"type": "SqlServerSource",
+								"sqlReaderQuery": "SELECT ISNULL(MAX(TransactionDt), '1/1/2010 12:00:00 AM') AS NewWatermark\nFROM dbo.Tickets",
+								"queryTimeout": "02:00:00",
+								"partitionOption": "None"
+							},
+							"dataset": {
+								"referenceName": "DS_SQL_Tickets",
+								"type": "DatasetReference",
+								"parameters": {}
+							}
+						}
+					},
+					{
+						"name": "Lookup - OldWatermark",
+						"type": "Lookup",
+						"dependsOn": [],
+						"policy": {
+							"timeout": "0.12:00:00",
+							"retry": 0,
+							"retryIntervalInSeconds": 30,
+							"secureOutput": false,
+							"secureInput": false
+						},
+						"userProperties": [],
+						"typeProperties": {
+							"source": {
+								"type": "SqlServerSource",
+								"sqlReaderQuery": "SELECT WatermarkValue AS OldWatermark\nFROM dbo.OldWatermark;",
+								"queryTimeout": "02:00:00",
+								"partitionOption": "None"
+							},
+							"dataset": {
+								"referenceName": "DS_SQL_Tickets",
+								"type": "DatasetReference",
+								"parameters": {}
+							}
+						}
+					},
+					{
+						"name": "Incremental Copy",
+						"type": "Copy",
+						"dependsOn": [
+							{
+								"activity": "Lookup - OldWatermark",
+								"dependencyConditions": [
+									"Succeeded"
+								]
+							},
+							{
+								"activity": "Lookup - NewWatermark",
+								"dependencyConditions": [
+									"Succeeded"
+								]
+							}
+						],
+						"policy": {
+							"timeout": "0.12:00:00",
+							"retry": 0,
+							"retryIntervalInSeconds": 30,
+							"secureOutput": false,
+							"secureInput": false
+						},
+						"userProperties": [],
+						"typeProperties": {
+							"source": {
+								"type": "SqlServerSource",
+								"sqlReaderQuery": {
+									"value": "SELECT * FROM dbo.Tickets WHERE TransactionDt > '@{activity('Lookup - OldWatermark').output.firstRow.OldWatermark}' AND TransactionDt <= '@{activity('Lookup - NewWatermark').output.firstRow.NewWatermark}'",
+									"type": "Expression"
+								},
+								"queryTimeout": "02:00:00",
+								"partitionOption": "None"
+							},
+							"sink": {
+								"type": "AzureSqlSink",
+								"preCopyScript": "TRUNCATE TABLE stg.cinema_tickets;",
+								"writeBehavior": "insert",
+								"sqlWriterUseTableLock": false,
+								"disableMetricsCollection": false
+							},
+							"enableStaging": false,
+							"translator": {
+								"type": "TabularTranslator",
+								"mappings": [
+									{
+										"source": {
+											"name": "CinemaCode",
+											"type": "String",
+											"physicalType": "nvarchar"
+										},
+										"sink": {
+											"name": "cinema_code",
+											"type": "String",
+											"physicalType": "nvarchar"
+										}
+									},
+									{
+										"source": {
+											"name": "CinemaName",
+											"type": "String",
+											"physicalType": "nvarchar"
+										},
+										"sink": {
+											"name": "cinema_name",
+											"type": "String",
+											"physicalType": "nvarchar"
+										}
+									},
+									{
+										"source": {
+											"name": "MovieId",
+											"type": "Int32",
+											"physicalType": "int"
+										},
+										"sink": {
+											"name": "movie_id",
+											"type": "Int32",
+											"physicalType": "int"
+										}
+									},
+									{
+										"source": {
+											"name": "TicketCount",
+											"type": "Int32",
+											"physicalType": "int"
+										},
+										"sink": {
+											"name": "ticket_count",
+											"type": "Int32",
+											"physicalType": "int"
+										}
+									},
+									{
+										"source": {
+											"name": "TicketPrice",
+											"type": "Decimal",
+											"physicalType": "decimal",
+											"scale": 1,
+											"precision": 4
+										},
+										"sink": {
+											"name": "ticket_price",
+											"type": "Decimal",
+											"physicalType": "decimal",
+											"scale": 1,
+											"precision": 4
+										}
+									},
+									{
+										"source": {
+											"name": "TransactionId",
+											"type": "String",
+											"physicalType": "nvarchar"
+										},
+										"sink": {
+											"name": "transaction_id",
+											"type": "String",
+											"physicalType": "nvarchar"
+										}
+									},
+									{
+										"source": {
+											"name": "TransactionDt",
+											"type": "DateTime",
+											"physicalType": "datetime"
+										},
+										"sink": {
+											"name": "transaction_date",
+											"type": "DateTime",
+											"physicalType": "datetime"
+										}
+									}
+								],
+								"typeConversion": true,
+								"typeConversionSettings": {
+									"allowDataTruncation": true,
+									"treatBooleanAsNumber": false
+								}
+							}
+						},
+						"inputs": [
+							{
+								"referenceName": "DS_SQL_Tickets",
+								"type": "DatasetReference",
+								"parameters": {}
+							}
+						],
+						"outputs": [
+							{
+								"referenceName": "DS_ASQL_CinemaTickets",
+								"type": "DatasetReference",
+								"parameters": {}
+							}
+						]
+					},
+					{
+						"name": "Run SP - spUpdateWatermark",
+						"type": "SqlServerStoredProcedure",
+						"dependsOn": [
+							{
+								"activity": "Incremental Copy",
+								"dependencyConditions": [
+									"Succeeded"
+								]
+							}
+						],
+						"policy": {
+							"timeout": "0.12:00:00",
+							"retry": 0,
+							"retryIntervalInSeconds": 30,
+							"secureOutput": false,
+							"secureInput": false
+						},
+						"userProperties": [],
+						"typeProperties": {
+							"storedProcedureName": "[[dbo].[spUpdateWatermark]",
+							"storedProcedureParameters": {
+								"LastModifiedtime": {
+									"value": {
+										"value": "@{activity('Lookup - NewWatermark').output.firstRow.NewWatermark}",
+										"type": "Expression"
+									},
+									"type": "Datetime"
+								}
+							}
+						},
+						"linkedServiceName": {
+							"referenceName": "LS_SQL_CinemaTickets",
+							"type": "LinkedServiceReference"
+						}
+					},
+					{
+						"name": "Run SP - spPopulateCinema",
+						"type": "SqlServerStoredProcedure",
+						"dependsOn": [
+							{
+								"activity": "Incremental Copy",
+								"dependencyConditions": [
+									"Succeeded"
+								]
+							}
+						],
+						"policy": {
+							"timeout": "0.12:00:00",
+							"retry": 0,
+							"retryIntervalInSeconds": 30,
+							"secureOutput": false,
+							"secureInput": false
+						},
+						"userProperties": [],
+						"typeProperties": {
+							"storedProcedureName": "[[dbo].[spPopulateCinema]"
+						},
+						"linkedServiceName": {
+							"referenceName": "LS_ASQL_Movies",
+							"type": "LinkedServiceReference"
+						}
+					},
+					{
+						"name": "Run SP - spPopulateCinemaTickets",
+						"type": "SqlServerStoredProcedure",
+						"dependsOn": [
+							{
+								"activity": "Run SP - spPopulateCinema",
+								"dependencyConditions": [
+									"Succeeded"
+								]
+							}
+						],
+						"policy": {
+							"timeout": "0.12:00:00",
+							"retry": 0,
+							"retryIntervalInSeconds": 30,
+							"secureOutput": false,
+							"secureInput": false
+						},
+						"userProperties": [],
+						"typeProperties": {
+							"storedProcedureName": "[[dbo].[spPopulateCinemaTickets]"
+						},
+						"linkedServiceName": {
+							"referenceName": "LS_ASQL_Movies",
+							"type": "LinkedServiceReference"
+						}
+					}
+				],
+				"policy": {
+					"elapsedTimeMetric": {}
+				},
+				"annotations": [],
+				"lastPublishTime": "2024-12-27T16:34:13Z"
+			},
+			"dependsOn": []
+		},
+		{
+			"name": "[concat(parameters('factoryName'), '/PL_Module_7_Incremental_Copy_Files')]",
+			"type": "Microsoft.DataFactory/factories/pipelines",
+			"apiVersion": "2018-06-01",
+			"properties": {
+				"activities": [
+					{
+						"name": "Run SP - spUpdateWatermark",
+						"type": "SqlServerStoredProcedure",
+						"dependsOn": [
+							{
+								"activity": "Copy - from BLOB storage to Datalake",
+								"dependencyConditions": [
+									"Succeeded"
+								]
+							}
+						],
+						"policy": {
+							"timeout": "0.12:00:00",
+							"retry": 0,
+							"retryIntervalInSeconds": 30,
+							"secureOutput": false,
+							"secureInput": false
+						},
+						"userProperties": [],
+						"typeProperties": {
+							"storedProcedureName": "[[dbo].[spUpdateLastModifiedWatermark]",
+							"storedProcedureParameters": {
+								"LastModifiedtime": {
+									"value": {
+										"value": "@pipeline().TriggerTime",
+										"type": "Expression"
+									},
+									"type": "DateTime"
+								}
+							}
+						},
+						"linkedServiceName": {
+							"referenceName": "LS_SQL_CinemaTickets",
+							"type": "LinkedServiceReference"
+						}
+					},
+					{
+						"name": "Lookup - Get OldWatermark",
+						"type": "Lookup",
+						"dependsOn": [],
+						"policy": {
+							"timeout": "0.12:00:00",
+							"retry": 0,
+							"retryIntervalInSeconds": 30,
+							"secureOutput": false,
+							"secureInput": false
+						},
+						"userProperties": [],
+						"typeProperties": {
+							"source": {
+								"type": "SqlServerSource",
+								"sqlReaderQuery": "SELECT WatermarkValue\nFROM dbo.LastModifiedWatermark;",
+								"queryTimeout": "02:00:00",
+								"partitionOption": "None"
+							},
+							"dataset": {
+								"referenceName": "DS_SQL_Tickets",
+								"type": "DatasetReference",
+								"parameters": {}
+							}
+						}
+					},
+					{
+						"name": "Copy - from BLOB storage to Datalake",
+						"type": "Copy",
+						"dependsOn": [
+							{
+								"activity": "Lookup - Get OldWatermark",
+								"dependencyConditions": [
+									"Succeeded"
+								]
+							}
+						],
+						"policy": {
+							"timeout": "0.12:00:00",
+							"retry": 0,
+							"retryIntervalInSeconds": 30,
+							"secureOutput": false,
+							"secureInput": false
+						},
+						"userProperties": [],
+						"typeProperties": {
+							"source": {
+								"type": "JsonSource",
+								"storeSettings": {
+									"type": "AzureBlobStorageReadSettings",
+									"recursive": true,
+									"modifiedDatetimeStart": {
+										"value": "@activity('Lookup - Get OldWatermark').output.firstRow.WatermarkValue",
+										"type": "Expression"
+									},
+									"modifiedDatetimeEnd": {
+										"value": "@utcNow()",
+										"type": "Expression"
+									},
+									"wildcardFileName": "*.json",
+									"enablePartitionDiscovery": false
+								},
+								"formatSettings": {
+									"type": "JsonReadSettings"
+								}
+							},
+							"sink": {
+								"type": "JsonSink",
+								"storeSettings": {
+									"type": "AzureBlobFSWriteSettings"
+								},
+								"formatSettings": {
+									"type": "JsonWriteSettings"
+								}
+							},
+							"enableStaging": false,
+							"parallelCopies": 32,
+							"dataIntegrationUnits": 4
+						},
+						"inputs": [
+							{
+								"referenceName": "DS_ABLB_online",
+								"type": "DatasetReference",
+								"parameters": {}
+							}
+						],
+						"outputs": [
+							{
+								"referenceName": "DS_ADLS_online",
+								"type": "DatasetReference",
+								"parameters": {}
+							}
+						]
+					}
+				],
+				"policy": {
+					"elapsedTimeMetric": {}
+				},
+				"variables": {
+					"latestModifiedDate": {
+						"type": "String"
+					},
+					"OldWatermark": {
+						"type": "String"
+					},
+					"NewWatermark": {
+						"type": "String"
+					}
+				},
+				"annotations": [],
+				"lastPublishTime": "2024-12-30T14:42:29Z"
+			},
+			"dependsOn": []
+		},
+		{
+			"name": "[concat(parameters('factoryName'), '/PL_Module_7_Incremental_Copy_Files_OLD_VER')]",
+			"type": "Microsoft.DataFactory/factories/pipelines",
+			"apiVersion": "2018-06-01",
+			"properties": {
+				"activities": [
+					{
+						"name": "Get List of Files",
+						"type": "GetMetadata",
+						"dependsOn": [
+							{
+								"activity": "Copy - from BLOB storage to Datalake",
+								"dependencyConditions": [
+									"Succeeded"
+								]
+							}
+						],
+						"policy": {
+							"timeout": "0.12:00:00",
+							"retry": 0,
+							"retryIntervalInSeconds": 30,
+							"secureOutput": false,
+							"secureInput": false
+						},
+						"userProperties": [],
+						"typeProperties": {
+							"dataset": {
+								"referenceName": "DS_ABLB_online",
+								"type": "DatasetReference",
+								"parameters": {}
+							},
+							"fieldList": [
+								"childItems"
+							],
+							"storeSettings": {
+								"type": "AzureBlobStorageReadSettings",
+								"recursive": true,
+								"enablePartitionDiscovery": false
+							},
+							"formatSettings": {
+								"type": "JsonReadSettings"
+							}
+						}
+					},
+					{
+						"name": "Get Latest File Timestamp",
+						"type": "ForEach",
+						"dependsOn": [
+							{
+								"activity": "Get List of Files",
+								"dependencyConditions": [
+									"Succeeded"
+								]
+							}
+						],
+						"userProperties": [],
+						"typeProperties": {
+							"items": {
+								"value": "@activity('Get List of Files').output.childItems",
+								"type": "Expression"
+							},
+							"activities": [
+								{
+									"name": "Get Timestamp for Each File",
+									"type": "GetMetadata",
+									"dependsOn": [],
+									"policy": {
+										"timeout": "0.12:00:00",
+										"retry": 0,
+										"retryIntervalInSeconds": 30,
+										"secureOutput": false,
+										"secureInput": false
+									},
+									"userProperties": [],
+									"typeProperties": {
+										"dataset": {
+											"referenceName": "DS_ABLB_online_file_param",
+											"type": "DatasetReference",
+											"parameters": {
+												"file": {
+													"value": "@item().name",
+													"type": "Expression"
+												}
+											}
+										},
+										"fieldList": [
+											"lastModified"
+										],
+										"storeSettings": {
+											"type": "AzureBlobStorageReadSettings",
+											"recursive": true,
+											"enablePartitionDiscovery": false
+										},
+										"formatSettings": {
+											"type": "JsonReadSettings"
+										}
+									}
+								},
+								{
+									"name": "If Condition1",
+									"type": "IfCondition",
+									"dependsOn": [
+										{
+											"activity": "Get Timestamp for Each File",
+											"dependencyConditions": [
+												"Succeeded"
+											]
+										}
+									],
+									"userProperties": [],
+									"typeProperties": {
+										"expression": {
+											"value": "@greater(activity('Get Timestamp for Each File').output.lastModified, variables('latestModifiedDate'))",
+											"type": "Expression"
+										},
+										"ifTrueActivities": [
+											{
+												"name": "Set variable1",
+												"type": "SetVariable",
+												"dependsOn": [],
+												"policy": {
+													"secureOutput": false,
+													"secureInput": false
+												},
+												"userProperties": [],
+												"typeProperties": {
+													"variableName": "latestModifiedDate",
+													"value": {
+														"value": "@activity('Get Timestamp for Each File').output.lastModified",
+														"type": "Expression"
+													}
+												}
+											}
+										]
+									}
+								}
+							]
+						}
+					},
+					{
+						"name": "Run SP - spUpdateWatermark",
+						"type": "SqlServerStoredProcedure",
+						"dependsOn": [
+							{
+								"activity": "Get Latest File Timestamp",
+								"dependencyConditions": [
+									"Succeeded"
+								]
+							}
+						],
+						"policy": {
+							"timeout": "0.12:00:00",
+							"retry": 0,
+							"retryIntervalInSeconds": 30,
+							"secureOutput": false,
+							"secureInput": false
+						},
+						"userProperties": [],
+						"typeProperties": {
+							"storedProcedureName": "[[dbo].[spUpdateLastModifiedWatermark]",
+							"storedProcedureParameters": {
+								"LastModifiedtime": {
+									"value": {
+										"value": "@variables('latestModifiedDate')",
+										"type": "Expression"
+									},
+									"type": "DateTime"
+								}
+							}
+						},
+						"linkedServiceName": {
+							"referenceName": "LS_SQL_CinemaTickets",
+							"type": "LinkedServiceReference"
+						}
+					},
+					{
+						"name": "Lookup - Get OldWatermark",
+						"type": "Lookup",
+						"dependsOn": [],
+						"policy": {
+							"timeout": "0.12:00:00",
+							"retry": 0,
+							"retryIntervalInSeconds": 30,
+							"secureOutput": false,
+							"secureInput": false
+						},
+						"userProperties": [],
+						"typeProperties": {
+							"source": {
+								"type": "SqlServerSource",
+								"sqlReaderQuery": "SELECT WatermarkValue\nFROM dbo.LastModifiedWatermark;",
+								"queryTimeout": "02:00:00",
+								"partitionOption": "None"
+							},
+							"dataset": {
+								"referenceName": "DS_SQL_Tickets",
+								"type": "DatasetReference",
+								"parameters": {}
+							}
+						}
+					},
+					{
+						"name": "Copy - from BLOB storage to Datalake",
+						"type": "Copy",
+						"dependsOn": [
+							{
+								"activity": "Lookup - Get OldWatermark",
+								"dependencyConditions": [
+									"Succeeded"
+								]
+							}
+						],
+						"policy": {
+							"timeout": "0.12:00:00",
+							"retry": 0,
+							"retryIntervalInSeconds": 30,
+							"secureOutput": false,
+							"secureInput": false
+						},
+						"userProperties": [],
+						"typeProperties": {
+							"source": {
+								"type": "JsonSource",
+								"storeSettings": {
+									"type": "AzureBlobStorageReadSettings",
+									"recursive": true,
+									"modifiedDatetimeStart": {
+										"value": "@activity('Lookup - Get OldWatermark').output.firstRow.WatermarkValue",
+										"type": "Expression"
+									},
+									"wildcardFileName": "*.json",
+									"enablePartitionDiscovery": false
+								},
+								"formatSettings": {
+									"type": "JsonReadSettings"
+								}
+							},
+							"sink": {
+								"type": "JsonSink",
+								"storeSettings": {
+									"type": "AzureBlobFSWriteSettings"
+								},
+								"formatSettings": {
+									"type": "JsonWriteSettings"
+								}
+							},
+							"enableStaging": false,
+							"parallelCopies": 32,
+							"dataIntegrationUnits": 4
+						},
+						"inputs": [
+							{
+								"referenceName": "DS_ABLB_online",
+								"type": "DatasetReference",
+								"parameters": {}
+							}
+						],
+						"outputs": [
+							{
+								"referenceName": "DS_ADLS_online",
+								"type": "DatasetReference",
+								"parameters": {}
+							}
+						]
+					}
+				],
+				"policy": {
+					"elapsedTimeMetric": {}
+				},
+				"variables": {
+					"latestModifiedDate": {
+						"type": "String"
+					}
+				},
+				"annotations": [],
+				"lastPublishTime": "2024-12-30T09:28:09Z"
+			},
+			"dependsOn": []
+		},
+		{
+			"name": "[concat(parameters('factoryName'), '/PL_Module_8_Alternative_Solution')]",
+			"type": "Microsoft.DataFactory/factories/pipelines",
+			"apiVersion": "2018-06-01",
+			"properties": {
+				"activities": [
+					{
+						"name": "Populate DimMovie",
+						"type": "Copy",
+						"dependsOn": [],
+						"policy": {
+							"timeout": "0.12:00:00",
+							"retry": 0,
+							"retryIntervalInSeconds": 30,
+							"secureOutput": false,
+							"secureInput": false
+						},
+						"userProperties": [],
+						"typeProperties": {
+							"source": {
+								"type": "AzureSqlSource",
+								"sqlReaderQuery": "SELECT\n    mov.MovieIdNK,\n    mov.Title,\n    mov.ReleaseDate,\n    mov.Runtime,\n    stat.MovieStatusName,\n    GETUTCDATE() AS CreatedDate,\n    GETUTCDATE() AS ModifiedDate\nFROM dbo.tMovies AS mov\nINNER JOIN dbo.tMovieStatus AS stat\n    ON mov.MovieStatusId = stat.MovieStatusId;",
+								"queryTimeout": "02:00:00",
+								"partitionOption": "None"
+							},
+							"sink": {
+								"type": "AzureSqlSink",
+								"preCopyScript": "TRUNCATE TABLE dbo.DimMovie;",
+								"writeBehavior": "insert",
+								"sqlWriterUseTableLock": false,
+								"disableMetricsCollection": false
+							},
+							"enableStaging": false,
+							"translator": {
+								"type": "TabularTranslator",
+								"mappings": [
+									{
+										"source": {
+											"name": "MovieIdNK",
+											"type": "Int32",
+											"physicalType": "int"
+										},
+										"sink": {
+											"name": "MovieIdNK",
+											"type": "Int32",
+											"physicalType": "int"
+										}
+									},
+									{
+										"source": {
+											"name": "Title",
+											"type": "String",
+											"physicalType": "nvarchar"
+										},
+										"sink": {
+											"name": "Title",
+											"type": "String",
+											"physicalType": "nvarchar"
+										}
+									},
+									{
+										"source": {
+											"name": "ReleaseDate",
+											"type": "DateTime",
+											"physicalType": "date"
+										},
+										"sink": {
+											"name": "ReleaseDate",
+											"type": "DateTime",
+											"physicalType": "date"
+										}
+									},
+									{
+										"source": {
+											"name": "Runtime",
+											"type": "Int32",
+											"physicalType": "int"
+										},
+										"sink": {
+											"name": "Runtime",
+											"type": "Int32",
+											"physicalType": "int"
+										}
+									},
+									{
+										"source": {
+											"name": "MovieStatusName",
+											"type": "String",
+											"physicalType": "nvarchar"
+										},
+										"sink": {
+											"name": "MovieStatus",
+											"type": "String",
+											"physicalType": "nvarchar"
+										}
+									},
+									{
+										"source": {
+											"name": "CreatedDate",
+											"type": "DateTime",
+											"physicalType": "datetime"
+										},
+										"sink": {
+											"name": "CreatedDate",
+											"type": "DateTime",
+											"physicalType": "datetime"
+										}
+									},
+									{
+										"source": {
+											"name": "ModifiedDate",
+											"type": "DateTime",
+											"physicalType": "datetime"
+										},
+										"sink": {
+											"name": "ModifiedDate",
+											"type": "DateTime",
+											"physicalType": "datetime"
+										}
+									}
+								],
+								"typeConversion": true,
+								"typeConversionSettings": {
+									"allowDataTruncation": true,
+									"treatBooleanAsNumber": false
+								}
+							}
+						},
+						"inputs": [
+							{
+								"referenceName": "DS_ASQL_MoviesDB_tMovies",
+								"type": "DatasetReference",
+								"parameters": {}
+							}
+						],
+						"outputs": [
+							{
+								"referenceName": "DS_ASQL_DataMart_DimMovie",
+								"type": "DatasetReference",
+								"parameters": {}
+							}
+						]
+					},
+					{
+						"name": "Populate DimOnlineService",
+						"type": "Copy",
+						"dependsOn": [
+							{
+								"activity": "Populate DimMovie",
+								"dependencyConditions": [
+									"Succeeded"
+								]
+							}
+						],
+						"policy": {
+							"timeout": "0.12:00:00",
+							"retry": 0,
+							"retryIntervalInSeconds": 30,
+							"secureOutput": false,
+							"secureInput": false
+						},
+						"userProperties": [],
+						"typeProperties": {
+							"source": {
+								"type": "AzureSqlSource",
+								"sqlReaderQuery": "SELECT\n    ServiceCode,\n    ServiceName,\n    GETUTCDATE() AS CreatedDate,\n    GETUTCDATE() AS ModifiedDate\nFROM dbo.tOnlineService;",
+								"queryTimeout": "02:00:00",
+								"partitionOption": "None"
+							},
+							"sink": {
+								"type": "AzureSqlSink",
+								"preCopyScript": "TRUNCATE TABLE dbo.DimOnlineService;\n",
+								"writeBehavior": "insert",
+								"sqlWriterUseTableLock": false,
+								"disableMetricsCollection": false
+							},
+							"enableStaging": false,
+							"translator": {
+								"type": "TabularTranslator",
+								"mappings": [
+									{
+										"source": {
+											"name": "ServiceCode",
+											"type": "String",
+											"physicalType": "nvarchar"
+										},
+										"sink": {
+											"name": "ServiceCode",
+											"type": "String",
+											"physicalType": "nvarchar"
+										}
+									},
+									{
+										"source": {
+											"name": "ServiceName",
+											"type": "String",
+											"physicalType": "nvarchar"
+										},
+										"sink": {
+											"name": "ServiceName",
+											"type": "String",
+											"physicalType": "nvarchar"
+										}
+									},
+									{
+										"source": {
+											"name": "CreatedDate",
+											"type": "DateTime",
+											"physicalType": "datetime"
+										},
+										"sink": {
+											"name": "CreatedDate",
+											"type": "DateTime",
+											"physicalType": "datetime"
+										}
+									},
+									{
+										"source": {
+											"name": "ModifiedDate",
+											"type": "DateTime",
+											"physicalType": "datetime"
+										},
+										"sink": {
+											"name": "ModifiedDate",
+											"type": "DateTime",
+											"physicalType": "datetime"
+										}
+									}
+								],
+								"typeConversion": true,
+								"typeConversionSettings": {
+									"allowDataTruncation": true,
+									"treatBooleanAsNumber": false
+								}
+							}
+						},
+						"inputs": [
+							{
+								"referenceName": "DS_ASQL_MoviesDB_tOnlineService",
+								"type": "DatasetReference",
+								"parameters": {}
+							}
+						],
+						"outputs": [
+							{
+								"referenceName": "DS_ASQL_DataMart_DimOnlineService",
+								"type": "DatasetReference",
+								"parameters": {}
+							}
+						]
+					},
+					{
+						"name": "Populate FactOnlinePurchase",
+						"type": "Copy",
+						"dependsOn": [
+							{
+								"activity": "Populate DimOnlineService",
+								"dependencyConditions": [
+									"Succeeded"
+								]
+							}
+						],
+						"policy": {
+							"timeout": "0.12:00:00",
+							"retry": 0,
+							"retryIntervalInSeconds": 30,
+							"secureOutput": false,
+							"secureInput": false
+						},
+						"userProperties": [],
+						"typeProperties": {
+							"source": {
+								"type": "AzureSqlSource",
+								"sqlReaderQuery": "SELECT\n    year(prch.TransactionDate)*10000 + month(prch.TransactionDate)*100 + day(prch.TransactionDate) AS DateKey,\n    dim_srvc.ServiceKey AS OnlineServiceKey,\n    dim_mov.MovieKey,\n    prch.Price,\n    prch.TransactionId\nFROM dbo.tOnlinePurchase AS prch\nINNER JOIN dbo.tOnlineService AS srvc\n    ON prch.ServiceId = srvc.ServiceId\nINNER JOIN dbo.DataMart_DimOnlineService AS dim_srvc\n    ON srvc.ServiceName = dim_srvc.ServiceName\nINNER JOIN dbo.tMovies AS mov\n    ON prch.MovieId = mov.MovieId\nINNER JOIN dbo.DataMart_DimMovie AS dim_mov\n    ON mov.MovieIdNK = dim_mov.MovieIdNK;\n ",
+								"queryTimeout": "02:00:00",
+								"partitionOption": "None"
+							},
+							"sink": {
+								"type": "AzureSqlSink",
+								"preCopyScript": "TRUNCATE TABLE dbo.FactOnlinePurchase;",
+								"writeBehavior": "insert",
+								"sqlWriterUseTableLock": false,
+								"disableMetricsCollection": false
+							},
+							"enableStaging": false,
+							"translator": {
+								"type": "TabularTranslator",
+								"mappings": [
+									{
+										"source": {
+											"name": "DateKey",
+											"type": "Int32",
+											"physicalType": "int"
+										},
+										"sink": {
+											"name": "DateKey",
+											"type": "Int32",
+											"physicalType": "int"
+										}
+									},
+									{
+										"source": {
+											"name": "OnlineServiceKey",
+											"type": "Int32",
+											"physicalType": "int"
+										},
+										"sink": {
+											"name": "OnlineServiceKey",
+											"type": "Int32",
+											"physicalType": "int"
+										}
+									},
+									{
+										"source": {
+											"name": "MovieKey",
+											"type": "Int32",
+											"physicalType": "int"
+										},
+										"sink": {
+											"name": "MovieKey",
+											"type": "Int32",
+											"physicalType": "int"
+										}
+									},
+									{
+										"source": {
+											"name": "Price",
+											"type": "Decimal",
+											"physicalType": "decimal",
+											"scale": 1,
+											"precision": 4
+										},
+										"sink": {
+											"name": "Price",
+											"type": "Decimal",
+											"physicalType": "decimal",
+											"scale": 1,
+											"precision": 4
+										}
+									},
+									{
+										"source": {
+											"name": "TransactionId",
+											"type": "String",
+											"physicalType": "nvarchar"
+										},
+										"sink": {
+											"name": "TransactionId",
+											"type": "String",
+											"physicalType": "nvarchar"
+										}
+									}
+								],
+								"typeConversion": true,
+								"typeConversionSettings": {
+									"allowDataTruncation": true,
+									"treatBooleanAsNumber": false
+								}
+							}
+						},
+						"inputs": [
+							{
+								"referenceName": "DS_ASQL_MoviesDB_tOnlinePurchase",
+								"type": "DatasetReference",
+								"parameters": {}
+							}
+						],
+						"outputs": [
+							{
+								"referenceName": "DS_ASQL_DataMart_FactOnlinePurchase",
+								"type": "DatasetReference",
+								"parameters": {}
+							}
+						]
+					},
+					{
+						"name": "Populate FactOnlinePurchase_MonthlySnapshot",
+						"type": "Copy",
+						"dependsOn": [
+							{
+								"activity": "Populate DimOnlineService",
+								"dependencyConditions": [
+									"Succeeded"
+								]
+							}
+						],
+						"policy": {
+							"timeout": "0.12:00:00",
+							"retry": 0,
+							"retryIntervalInSeconds": 30,
+							"secureOutput": false,
+							"secureInput": false
+						},
+						"userProperties": [],
+						"typeProperties": {
+							"source": {
+								"type": "AzureSqlSource",
+								"sqlReaderQuery": "WITH CTE_AllSales AS (   \n    SELECT\n        year(prch.TransactionDate)*10000 + month(prch.TransactionDate)*100 AS MonthKey,\n        dim_srvc.ServiceKey AS OnlineServiceKey,\n        prch.Price,\n        prch.TransactionId\n    FROM dbo.tOnlinePurchase AS prch\n    INNER JOIN dbo.tOnlineService AS srvc\n        ON prch.ServiceId = srvc.ServiceId\n    INNER JOIN dbo.DataMart_DimOnlineService AS dim_srvc\n        ON srvc.ServiceName = dim_srvc.ServiceName\n)\nSELECT\n    MonthKey,\n    OnlineServiceKey,\n    SUM(Price) AS PurchaseAmount,\n    COUNT(Price) AS PurchaseQuantity\nFROM CTE_AllSales\nGROUP BY MonthKey, OnlineServiceKey;\n ",
+								"queryTimeout": "02:00:00",
+								"partitionOption": "None"
+							},
+							"sink": {
+								"type": "AzureSqlSink",
+								"preCopyScript": "TRUNCATE TABLE dbo.FactOnlinePurchase_MonthlySnapshot;",
+								"writeBehavior": "insert",
+								"sqlWriterUseTableLock": false,
+								"disableMetricsCollection": false
+							},
+							"enableStaging": false,
+							"translator": {
+								"type": "TabularTranslator",
+								"mappings": [
+									{
+										"source": {
+											"name": "MonthKey",
+											"type": "Int32",
+											"physicalType": "int"
+										},
+										"sink": {
+											"name": "MonthKey",
+											"type": "Int32",
+											"physicalType": "int"
+										}
+									},
+									{
+										"source": {
+											"name": "OnlineServiceKey",
+											"type": "Int32",
+											"physicalType": "int"
+										},
+										"sink": {
+											"name": "OnlineServiceKey",
+											"type": "Int32",
+											"physicalType": "int"
+										}
+									},
+									{
+										"source": {
+											"name": "PurchaseAmount",
+											"type": "Decimal",
+											"physicalType": "decimal",
+											"scale": 1,
+											"precision": 38
+										},
+										"sink": {
+											"name": "PurchaseAmount",
+											"type": "Decimal",
+											"physicalType": "decimal",
+											"scale": 1,
+											"precision": 10
+										}
+									},
+									{
+										"source": {
+											"name": "PurchaseQuantity",
+											"type": "Int32",
+											"physicalType": "int"
+										},
+										"sink": {
+											"name": "PurchaseQuantity",
+											"type": "Int32",
+											"physicalType": "int"
+										}
+									}
+								],
+								"typeConversion": true,
+								"typeConversionSettings": {
+									"allowDataTruncation": true,
+									"treatBooleanAsNumber": false
+								}
+							}
+						},
+						"inputs": [
+							{
+								"referenceName": "DS_ASQL_MoviesDB_tOnlinePurchase",
+								"type": "DatasetReference",
+								"parameters": {}
+							}
+						],
+						"outputs": [
+							{
+								"referenceName": "DS_ASQL_DataMart_FactOnlinePurchase_MonthlySnapshot",
+								"type": "DatasetReference",
+								"parameters": {}
+							}
+						]
+					}
+				],
+				"policy": {
+					"elapsedTimeMetric": {}
+				},
+				"annotations": [],
+				"lastPublishTime": "2025-01-30T17:57:41Z"
+			},
+			"dependsOn": []
+		},
+		{
+			"name": "[concat(parameters('factoryName'), '/PL_TRAN_Module_2_Copy_Movies_from_ABLB_to_ADLS')]",
+			"type": "Microsoft.DataFactory/factories/pipelines",
+			"apiVersion": "2018-06-01",
+			"properties": {
+				"activities": [
+					{
+						"name": "Get Metadata1",
+						"type": "GetMetadata",
+						"dependsOn": [],
+						"policy": {
+							"timeout": "0.12:00:00",
+							"retry": 0,
+							"retryIntervalInSeconds": 30,
+							"secureOutput": false,
+							"secureInput": false
+						},
+						"userProperties": [],
+						"typeProperties": {
+							"dataset": {
+								"referenceName": "DS_GetMetadata_Movies",
+								"type": "DatasetReference",
+								"parameters": {}
+							},
+							"fieldList": [
+								"childItems"
+							],
+							"storeSettings": {
+								"type": "AzureBlobStorageReadSettings",
+								"recursive": true,
+								"enablePartitionDiscovery": false
+							},
+							"formatSettings": {
+								"type": "DelimitedTextReadSettings"
+							}
+						}
+					},
+					{
+						"name": "ForEach1",
+						"type": "ForEach",
+						"dependsOn": [
+							{
+								"activity": "Get Metadata1",
+								"dependencyConditions": [
+									"Succeeded"
+								]
+							}
+						],
+						"userProperties": [],
+						"typeProperties": {
+							"items": {
+								"value": "@activity('Get Metadata1').output.childItems",
+								"type": "Expression"
+							},
+							"isSequential": true,
+							"activities": [
+								{
+									"name": "Copy data1",
+									"type": "Copy",
+									"dependsOn": [],
+									"policy": {
+										"timeout": "0.12:00:00",
+										"retry": 0,
+										"retryIntervalInSeconds": 30,
+										"secureOutput": false,
+										"secureInput": false
+									},
+									"userProperties": [],
+									"typeProperties": {
+										"source": {
+											"type": "DelimitedTextSource",
+											"storeSettings": {
+												"type": "AzureBlobStorageReadSettings",
+												"recursive": true,
+												"enablePartitionDiscovery": false
+											},
+											"formatSettings": {
+												"type": "DelimitedTextReadSettings"
+											}
+										},
+										"sink": {
+											"type": "DelimitedTextSink",
+											"storeSettings": {
+												"type": "AzureBlobFSWriteSettings"
+											},
+											"formatSettings": {
+												"type": "DelimitedTextWriteSettings",
+												"quoteAllText": true,
+												"fileExtension": ".txt"
+											}
+										},
+										"enableStaging": false,
+										"logSettings": {
+											"enableCopyActivityLog": true,
+											"copyActivityLogSettings": {
+												"logLevel": "Info",
+												"enableReliableLogging": false
+											},
+											"logLocationSettings": {
+												"linkedServiceName": {
+													"referenceName": "LS_ADLS_mikalaip",
+													"type": "LinkedServiceReference"
+												},
+												"path": "log"
+											}
+										},
+										"translator": {
+											"type": "TabularTranslator",
+											"typeConversion": true,
+											"typeConversionSettings": {
+												"allowDataTruncation": true,
+												"treatBooleanAsNumber": false
+											}
+										}
+									},
+									"inputs": [
+										{
+											"referenceName": "DS_ABLB_MoviesCSV",
+											"type": "DatasetReference",
+											"parameters": {
+												"SourceFile": {
+													"value": "@item().name",
+													"type": "Expression"
+												}
+											}
+										}
+									],
+									"outputs": [
+										{
+											"referenceName": "DS_ADLS_MoviesCSV",
+											"type": "DatasetReference",
+											"parameters": {
+												"SinkFile": {
+													"value": "@replace(item().name, '.csv', concat('_', pipeline().TriggerTime, '.csv'))",
+													"type": "Expression"
+												}
+											}
+										}
+									]
+								}
+							]
+						}
+					}
+				],
+				"policy": {
+					"elapsedTimeMetric": {}
+				},
+				"variables": {
+					"var_file_name": {
+						"type": "String"
+					}
+				},
+				"annotations": [],
+				"lastPublishTime": "2024-12-16T14:43:08Z"
+			},
+			"dependsOn": []
+		},
+		{
+			"name": "[concat(parameters('factoryName'), '/LoadDimTables')]",
+			"type": "Microsoft.DataFactory/factories/dataflows",
+			"apiVersion": "2018-06-01",
+			"properties": {
+				"type": "MappingDataFlow",
+				"typeProperties": {
+					"sources": [
+						{
+							"dataset": {
+								"referenceName": "DS_ASQL_MoviesDB_tMovies",
+								"type": "DatasetReference"
+							},
+							"name": "tMovies"
+						},
+						{
+							"dataset": {
+								"referenceName": "DS_ASQL_MoviesDB_tMovieStatus",
+								"type": "DatasetReference"
+							},
+							"name": "tMovieStatus"
+						},
+						{
+							"dataset": {
+								"referenceName": "DS_ASQL_MoviesDB_tOnlineService",
+								"type": "DatasetReference"
+							},
+							"name": "tOnlineService"
+						}
+					],
+					"sinks": [
+						{
+							"dataset": {
+								"referenceName": "DS_ASQL_DataMart_DimMovie",
+								"type": "DatasetReference"
+							},
+							"name": "DimMovie"
+						},
+						{
+							"dataset": {
+								"referenceName": "DS_ASQL_DataMart_DimOnlineService",
+								"type": "DatasetReference"
+							},
+							"name": "DimOnlineService"
+						}
+					],
+					"transformations": [
+						{
+							"name": "derivedCreatedDate",
+							"description": "Derived column - CreatedDate"
+						},
+						{
+							"name": "derivedModifiedDate",
+							"description": "Derived column - ModifiedDate"
+						},
+						{
+							"name": "joinMovieWithMovieStatus"
+						},
+						{
+							"name": "derivedCreatedDate2"
+						},
+						{
+							"name": "derivedModifiedDate2"
+						}
+					],
+					"scriptLines": [
+						"source(output(",
+						"          MovieId as integer,",
+						"          MovieIdNK as integer,",
+						"          Budget as integer,",
+						"          HomepagePath as string,",
+						"          Title as string,",
+						"          OriginalTitle as string,",
+						"          ReleaseDate as date,",
+						"          Revenue as long,",
+						"          Runtime as integer,",
+						"          MovieStatusId as integer,",
+						"          AvgVote as decimal(3,1),",
+						"          CreatedDate as timestamp,",
+						"          ModifiedDate as timestamp,",
+						"          SrcFileName as string",
+						"     ),",
+						"     allowSchemaDrift: true,",
+						"     validateSchema: false,",
+						"     isolationLevel: 'READ_UNCOMMITTED',",
+						"     format: 'table') ~> tMovies",
+						"source(output(",
+						"          MovieStatusId as integer,",
+						"          MovieStatusName as string,",
+						"          CreatedDate as timestamp",
+						"     ),",
+						"     allowSchemaDrift: true,",
+						"     validateSchema: false,",
+						"     isolationLevel: 'READ_UNCOMMITTED',",
+						"     format: 'table') ~> tMovieStatus",
+						"source(output(",
+						"          ServiceId as integer,",
+						"          ServiceCode as string,",
+						"          ServiceName as string,",
+						"          CreatedDate as timestamp,",
+						"          ModifiedDate as timestamp",
+						"     ),",
+						"     allowSchemaDrift: true,",
+						"     validateSchema: false,",
+						"     isolationLevel: 'READ_UNCOMMITTED',",
+						"     format: 'table') ~> tOnlineService",
+						"derivedModifiedDate derive(CreatedDate = currentUTC()) ~> derivedCreatedDate",
+						"joinMovieWithMovieStatus derive(ModifiedDate = currentUTC()) ~> derivedModifiedDate",
+						"tMovies, tMovieStatus join(tMovies@MovieStatusId == tMovieStatus@MovieStatusId,",
+						"     joinType:'inner',",
+						"     matchType:'exact',",
+						"     ignoreSpaces: false,",
+						"     broadcast: 'auto')~> joinMovieWithMovieStatus",
+						"derivedModifiedDate2 derive(CreatedDate = currentUTC()) ~> derivedCreatedDate2",
+						"tOnlineService derive(ModifiedDate = currentUTC()) ~> derivedModifiedDate2",
+						"derivedCreatedDate sink(allowSchemaDrift: true,",
+						"     validateSchema: false,",
+						"     input(",
+						"          MovieKey as integer,",
+						"          MovieIdNK as integer,",
+						"          Title as string,",
+						"          ReleaseDate as date,",
+						"          Runtime as integer,",
+						"          MovieStatus as string,",
+						"          CreatedDate as timestamp,",
+						"          ModifiedDate as timestamp",
+						"     ),",
+						"     deletable:false,",
+						"     insertable:true,",
+						"     updateable:false,",
+						"     upsertable:false,",
+						"     truncate:true,",
+						"     format: 'table',",
+						"     skipDuplicateMapInputs: true,",
+						"     skipDuplicateMapOutputs: true,",
+						"     errorHandlingOption: 'stopOnFirstError',",
+						"     mapColumn(",
+						"          MovieIdNK,",
+						"          Title,",
+						"          ReleaseDate,",
+						"          Runtime,",
+						"          MovieStatus = MovieStatusName,",
+						"          CreatedDate,",
+						"          ModifiedDate",
+						"     )) ~> DimMovie",
+						"derivedCreatedDate2 sink(allowSchemaDrift: true,",
+						"     validateSchema: false,",
+						"     input(",
+						"          ServiceKey as integer,",
+						"          ServiceCode as string,",
+						"          ServiceName as string,",
+						"          CreatedDate as timestamp,",
+						"          ModifiedDate as timestamp",
+						"     ),",
+						"     deletable:false,",
+						"     insertable:true,",
+						"     updateable:false,",
+						"     upsertable:false,",
+						"     truncate:true,",
+						"     format: 'table',",
+						"     skipDuplicateMapInputs: true,",
+						"     skipDuplicateMapOutputs: true,",
+						"     errorHandlingOption: 'stopOnFirstError',",
+						"     mapColumn(",
+						"          ServiceCode,",
+						"          ServiceName,",
+						"          CreatedDate,",
+						"          ModifiedDate",
+						"     )) ~> DimOnlineService"
+					]
+				}
+			},
+			"dependsOn": []
+		},
+		{
+			"name": "[concat(parameters('factoryName'), '/LoadFactTables')]",
+			"type": "Microsoft.DataFactory/factories/dataflows",
+			"apiVersion": "2018-06-01",
+			"properties": {
+				"type": "MappingDataFlow",
+				"typeProperties": {
+					"sources": [
+						{
+							"dataset": {
+								"referenceName": "DS_ASQL_MoviesDB_tOnlinePurchase",
+								"type": "DatasetReference"
+							},
+							"name": "tOnlinePurchase"
+						},
+						{
+							"dataset": {
+								"referenceName": "DS_ASQL_DataMart_DimOnlineService",
+								"type": "DatasetReference"
+							},
+							"name": "DimOnlineService"
+						},
+						{
+							"dataset": {
+								"referenceName": "DS_ASQL_DataMart_DimMovie",
+								"type": "DatasetReference"
+							},
+							"name": "DimMovie"
+						},
+						{
+							"dataset": {
+								"referenceName": "DS_ASQL_MoviesDB_tOnlineService",
+								"type": "DatasetReference"
+							},
+							"name": "tOnlineService"
+						},
+						{
+							"dataset": {
+								"referenceName": "DS_ASQL_MoviesDB_tMovies",
+								"type": "DatasetReference"
+							},
+							"name": "tMovies"
+						},
+						{
+							"dataset": {
+								"referenceName": "DS_ASQL_MoviesDB_tOnlinePurchase",
+								"type": "DatasetReference"
+							},
+							"name": "tOnlinePurchaseAgg"
+						}
+					],
+					"sinks": [
+						{
+							"dataset": {
+								"referenceName": "DS_ASQL_DataMart_FactOnlinePurchase",
+								"type": "DatasetReference"
+							},
+							"name": "FactOnlinePurchase"
+						},
+						{
+							"dataset": {
+								"referenceName": "DS_ASQL_DataMart_FactOnlinePurchase_MonthlySnapshot",
+								"type": "DatasetReference"
+							},
+							"name": "FactOnlinePurchaseMonthlySnapshot"
+						}
+					],
+					"transformations": [
+						{
+							"name": "Join2tOnlineService"
+						},
+						{
+							"name": "Join2DimOnlineService"
+						},
+						{
+							"name": "Join2DimMovie"
+						},
+						{
+							"name": "TransactionDate2YYYYMMDD"
+						},
+						{
+							"name": "Join2tMovies"
+						},
+						{
+							"name": "Join2tOnlineServiceAgg"
+						},
+						{
+							"name": "Join2DimOnlineServiceAgg"
+						},
+						{
+							"name": "TransactionDate2YYYYMM"
+						},
+						{
+							"name": "PurchaseAgg"
+						}
+					],
+					"scriptLines": [
+						"source(output(",
+						"          Id as integer,",
+						"          ServiceId as integer,",
+						"          MovieId as integer,",
+						"          UserId as integer,",
+						"          Price as decimal(4,1),",
+						"          TransactionId as string,",
+						"          TransactionDate as timestamp,",
+						"          CreatedDate as timestamp,",
+						"          ModifiedDate as timestamp,",
+						"          SrcFileName as string",
+						"     ),",
+						"     allowSchemaDrift: true,",
+						"     validateSchema: false,",
+						"     isolationLevel: 'READ_UNCOMMITTED',",
+						"     format: 'table') ~> tOnlinePurchase",
+						"source(output(",
+						"          ServiceKey as integer,",
+						"          ServiceCode as string,",
+						"          ServiceName as string,",
+						"          CreatedDate as timestamp,",
+						"          ModifiedDate as timestamp",
+						"     ),",
+						"     allowSchemaDrift: true,",
+						"     validateSchema: false,",
+						"     isolationLevel: 'READ_UNCOMMITTED',",
+						"     format: 'table') ~> DimOnlineService",
+						"source(output(",
+						"          MovieKey as integer,",
+						"          MovieIdNK as integer,",
+						"          Title as string,",
+						"          ReleaseDate as date,",
+						"          Runtime as integer,",
+						"          MovieStatus as string,",
+						"          CreatedDate as timestamp,",
+						"          ModifiedDate as timestamp",
+						"     ),",
+						"     allowSchemaDrift: true,",
+						"     validateSchema: false,",
+						"     isolationLevel: 'READ_UNCOMMITTED',",
+						"     format: 'table') ~> DimMovie",
+						"source(output(",
+						"          ServiceId as integer,",
+						"          ServiceCode as string,",
+						"          ServiceName as string,",
+						"          CreatedDate as timestamp,",
+						"          ModifiedDate as timestamp",
+						"     ),",
+						"     allowSchemaDrift: true,",
+						"     validateSchema: false,",
+						"     isolationLevel: 'READ_UNCOMMITTED',",
+						"     format: 'table') ~> tOnlineService",
+						"source(output(",
+						"          MovieId as integer,",
+						"          MovieIdNK as integer,",
+						"          Budget as integer,",
+						"          HomepagePath as string,",
+						"          Title as string,",
+						"          OriginalTitle as string,",
+						"          ReleaseDate as date,",
+						"          Revenue as long,",
+						"          Runtime as integer,",
+						"          MovieStatusId as integer,",
+						"          AvgVote as decimal(3,1),",
+						"          CreatedDate as timestamp,",
+						"          ModifiedDate as timestamp,",
+						"          SrcFileName as string",
+						"     ),",
+						"     allowSchemaDrift: true,",
+						"     validateSchema: false,",
+						"     isolationLevel: 'READ_UNCOMMITTED',",
+						"     format: 'table') ~> tMovies",
+						"source(output(",
+						"          Id as integer,",
+						"          ServiceId as integer,",
+						"          MovieId as integer,",
+						"          UserId as integer,",
+						"          Price as decimal(4,1),",
+						"          TransactionId as string,",
+						"          TransactionDate as timestamp,",
+						"          CreatedDate as timestamp,",
+						"          ModifiedDate as timestamp,",
+						"          SrcFileName as string",
+						"     ),",
+						"     allowSchemaDrift: true,",
+						"     validateSchema: false,",
+						"     isolationLevel: 'READ_UNCOMMITTED',",
+						"     format: 'table') ~> tOnlinePurchaseAgg",
+						"tOnlinePurchase, tOnlineService join(tOnlinePurchase@ServiceId == tOnlineService@ServiceId,",
+						"     joinType:'inner',",
+						"     matchType:'exact',",
+						"     ignoreSpaces: false,",
+						"     broadcast: 'auto')~> Join2tOnlineService",
+						"Join2tOnlineService, DimOnlineService join(tOnlineService@ServiceName == DimOnlineService@ServiceName,",
+						"     joinType:'inner',",
+						"     matchType:'exact',",
+						"     ignoreSpaces: false,",
+						"     broadcast: 'auto')~> Join2DimOnlineService",
+						"Join2tMovies, DimMovie join(tMovies@MovieIdNK == DimMovie@MovieIdNK,",
+						"     joinType:'inner',",
+						"     matchType:'exact',",
+						"     ignoreSpaces: false,",
+						"     broadcast: 'auto')~> Join2DimMovie",
+						"Join2DimMovie derive(TransactionDateYYYYMMDD = year(TransactionDate)*10000 + month(TransactionDate)*100 + dayOfMonth(TransactionDate)) ~> TransactionDate2YYYYMMDD",
+						"Join2DimOnlineService, tMovies join(tOnlinePurchase@MovieId == tMovies@MovieId,",
+						"     joinType:'inner',",
+						"     matchType:'exact',",
+						"     ignoreSpaces: false,",
+						"     broadcast: 'auto')~> Join2tMovies",
+						"tOnlinePurchaseAgg, tOnlineService join(tOnlinePurchaseAgg@ServiceId == tOnlineService@ServiceId,",
+						"     joinType:'inner',",
+						"     matchType:'exact',",
+						"     ignoreSpaces: false,",
+						"     broadcast: 'auto')~> Join2tOnlineServiceAgg",
+						"Join2tOnlineServiceAgg, DimOnlineService join(tOnlineService@ServiceName == DimOnlineService@ServiceName,",
+						"     joinType:'inner',",
+						"     matchType:'exact',",
+						"     ignoreSpaces: false,",
+						"     broadcast: 'auto')~> Join2DimOnlineServiceAgg",
+						"Join2DimOnlineServiceAgg derive(TransactionDateYYYYMM = year(TransactionDate)*10000 + month(TransactionDate)*100) ~> TransactionDate2YYYYMM",
+						"TransactionDate2YYYYMM aggregate(groupBy(TransactionDateYYYYMM,",
+						"          ServiceKey),",
+						"     PurchaseAmount = sum(Price),",
+						"          PurchaseQuantity = count(Price)) ~> PurchaseAgg",
+						"TransactionDate2YYYYMMDD sink(allowSchemaDrift: true,",
+						"     validateSchema: false,",
+						"     input(",
+						"          DateKey as integer,",
+						"          OnlineServiceKey as integer,",
+						"          MovieKey as integer,",
+						"          Price as decimal(4,1),",
+						"          TransactionId as string",
+						"     ),",
+						"     deletable:false,",
+						"     insertable:true,",
+						"     updateable:false,",
+						"     upsertable:false,",
+						"     truncate:true,",
+						"     format: 'table',",
+						"     skipDuplicateMapInputs: true,",
+						"     skipDuplicateMapOutputs: true,",
+						"     errorHandlingOption: 'stopOnFirstError',",
+						"     mapColumn(",
+						"          DateKey = TransactionDateYYYYMMDD,",
+						"          OnlineServiceKey = ServiceKey,",
+						"          MovieKey,",
+						"          Price,",
+						"          TransactionId",
+						"     )) ~> FactOnlinePurchase",
+						"PurchaseAgg sink(allowSchemaDrift: true,",
+						"     validateSchema: false,",
+						"     input(",
+						"          MonthKey as integer,",
+						"          OnlineServiceKey as integer,",
+						"          PurchaseAmount as decimal(10,1),",
+						"          PurchaseQuantity as integer",
+						"     ),",
+						"     deletable:false,",
+						"     insertable:true,",
+						"     updateable:false,",
+						"     upsertable:false,",
+						"     truncate:true,",
+						"     format: 'table',",
+						"     skipDuplicateMapInputs: true,",
+						"     skipDuplicateMapOutputs: true,",
+						"     errorHandlingOption: 'stopOnFirstError',",
+						"     mapColumn(",
+						"          MonthKey = TransactionDateYYYYMM,",
+						"          OnlineServiceKey = ServiceKey,",
+						"          PurchaseAmount,",
+						"          PurchaseQuantity",
+						"     )) ~> FactOnlinePurchaseMonthlySnapshot"
+					]
+				}
+			},
+			"dependsOn": []
+		},
+		{
+			"name": "[concat(parameters('factoryName'), '/PL_Module_7_MASTER')]",
+			"type": "Microsoft.DataFactory/factories/pipelines",
+			"apiVersion": "2018-06-01",
+			"properties": {
+				"activities": [
+					{
+						"name": "PL_Module_7_Incremental_Copy_Files",
+						"type": "ExecutePipeline",
+						"dependsOn": [],
+						"policy": {
+							"secureInput": false
+						},
+						"userProperties": [],
+						"typeProperties": {
+							"pipeline": {
+								"referenceName": "PL_Module_7_Incremental_Copy_Files",
+								"type": "PipelineReference"
+							},
+							"waitOnCompletion": true,
+							"parameters": {}
+						}
+					},
+					{
+						"name": "PL_Module_7_JSON_to_ASQL",
+						"type": "ExecutePipeline",
+						"dependsOn": [
+							{
+								"activity": "PL_Module_7_Incremental_Copy_Files",
+								"dependencyConditions": [
+									"Succeeded"
+								]
+							}
+						],
+						"policy": {
+							"secureInput": false
+						},
+						"userProperties": [],
+						"typeProperties": {
+							"pipeline": {
+								"referenceName": "PL_Module_7_JSON_to_ASQL",
+								"type": "PipelineReference"
+							},
+							"waitOnCompletion": true,
+							"parameters": {}
+						}
+					},
+					{
+						"name": "PL_Module_7_Archive_online",
+						"type": "ExecutePipeline",
+						"dependsOn": [
+							{
+								"activity": "PL_Module_7_JSON_to_ASQL",
+								"dependencyConditions": [
+									"Succeeded"
+								]
+							}
+						],
+						"policy": {
+							"secureInput": false
+						},
+						"userProperties": [],
+						"typeProperties": {
+							"pipeline": {
+								"referenceName": "PL_Module_7_Archive_online",
+								"type": "PipelineReference"
+							},
+							"waitOnCompletion": true,
+							"parameters": {}
+						}
+					}
+				],
+				"policy": {
+					"elapsedTimeMetric": {}
+				},
+				"annotations": [],
+				"lastPublishTime": "2024-12-30T15:01:48Z"
+			},
+			"dependsOn": [
+				"[concat(variables('factoryId'), '/pipelines/PL_Module_7_Incremental_Copy_Files')]"
+			]
+		},
+		{
+			"name": "[concat(parameters('factoryName'), '/PL_Module_8_Populate_Dim_and_Fact')]",
+			"type": "Microsoft.DataFactory/factories/pipelines",
+			"apiVersion": "2018-06-01",
+			"properties": {
+				"activities": [
+					{
+						"name": "Populate Dim tables",
+						"type": "ExecuteDataFlow",
+						"dependsOn": [],
+						"policy": {
+							"timeout": "0.12:00:00",
+							"retry": 0,
+							"retryIntervalInSeconds": 30,
+							"secureOutput": false,
+							"secureInput": false
+						},
+						"userProperties": [],
+						"typeProperties": {
+							"dataflow": {
+								"referenceName": "LoadDimTables",
+								"type": "DataFlowReference",
+								"parameters": {},
+								"datasetParameters": {
+									"tMovies": {},
+									"tMovieStatus": {},
+									"tOnlineService": {},
+									"DimMovie": {},
+									"DimOnlineService": {}
+								}
+							},
+							"staging": {},
+							"integrationRuntime": {
+								"referenceName": "Azure-IR-M8",
+								"type": "IntegrationRuntimeReference"
+							},
+							"traceLevel": "Fine"
+						}
+					},
+					{
+						"name": "Populate Fact tables",
+						"type": "ExecuteDataFlow",
+						"dependsOn": [
+							{
+								"activity": "Populate Dim tables",
+								"dependencyConditions": [
+									"Succeeded"
+								]
+							}
+						],
+						"policy": {
+							"timeout": "0.12:00:00",
+							"retry": 0,
+							"retryIntervalInSeconds": 30,
+							"secureOutput": false,
+							"secureInput": false
+						},
+						"userProperties": [],
+						"typeProperties": {
+							"dataflow": {
+								"referenceName": "LoadFactTables",
+								"type": "DataFlowReference",
+								"parameters": {},
+								"datasetParameters": {
+									"tOnlinePurchase": {},
+									"DimOnlineService": {},
+									"DimMovie": {},
+									"tOnlineService": {},
+									"tMovies": {},
+									"tOnlinePurchaseAgg": {},
+									"FactOnlinePurchase": {},
+									"FactOnlinePurchaseMonthlySnapshot": {}
+								}
+							},
+							"staging": {},
+							"integrationRuntime": {
+								"referenceName": "Azure-IR-M8",
+								"type": "IntegrationRuntimeReference"
+							},
+							"traceLevel": "Fine"
+						}
+					}
+				],
+				"policy": {
+					"elapsedTimeMetric": {}
+				},
+				"annotations": [],
+				"lastPublishTime": "2025-01-10T15:51:21Z"
+			},
+			"dependsOn": [
+				"[concat(variables('factoryId'), '/dataflows/LoadDimTables')]",
+				"[concat(variables('factoryId'), '/dataflows/LoadFactTables')]"
+			]
+		},
+		{
+			"name": "[concat(parameters('factoryName'), '/PL_TRAN_Module_5_MASTER')]",
+			"type": "Microsoft.DataFactory/factories/pipelines",
+			"apiVersion": "2018-06-01",
+			"properties": {
+				"activities": [
+					{
+						"name": "Execute - Module_2_Copy_Movies_from_ABLB_to_ADLS",
+						"type": "ExecutePipeline",
+						"dependsOn": [],
+						"policy": {
+							"secureInput": false
+						},
+						"userProperties": [],
+						"typeProperties": {
+							"pipeline": {
+								"referenceName": "PL_TRAN_Module_2_Copy_Movies_from_ABLB_to_ADLS",
+								"type": "PipelineReference"
+							},
+							"waitOnCompletion": true,
+							"parameters": {}
+						}
+					},
+					{
+						"name": "Execute - Module_5_Load_CSV_to_ASQL",
+						"type": "ExecutePipeline",
+						"dependsOn": [
+							{
+								"activity": "Execute - Module_2_Copy_Movies_from_ABLB_to_ADLS",
+								"dependencyConditions": [
+									"Succeeded"
+								]
+							}
+						],
+						"policy": {
+							"secureInput": false
+						},
+						"userProperties": [],
+						"typeProperties": {
+							"pipeline": {
+								"referenceName": "PL_TRAN_Module_5_Load_CSV_to_ASQL",
+								"type": "PipelineReference"
+							},
+							"waitOnCompletion": true,
+							"parameters": {}
+						}
+					},
+					{
+						"name": "Execute - Module_5_Archive_Movies",
+						"type": "ExecutePipeline",
+						"dependsOn": [
+							{
+								"activity": "Execute - Module_5_Load_CSV_to_ASQL",
+								"dependencyConditions": [
+									"Succeeded"
+								]
+							}
+						],
+						"policy": {
+							"secureInput": false
+						},
+						"userProperties": [],
+						"typeProperties": {
+							"pipeline": {
+								"referenceName": "PL_DATA_Module_5_Archive_Movies",
+								"type": "PipelineReference"
+							},
+							"waitOnCompletion": true,
+							"parameters": {}
+						}
+					}
+				],
+				"policy": {
+					"elapsedTimeMetric": {}
+				},
+				"annotations": [],
+				"lastPublishTime": "2024-12-16T14:40:51Z"
+			},
+			"dependsOn": [
+				"[concat(variables('factoryId'), '/pipelines/PL_TRAN_Module_2_Copy_Movies_from_ABLB_to_ADLS')]"
+			]
+		},
+		{
+			"name": "[concat(parameters('factoryName'), '/TRIG_Module_6_Daily')]",
+			"type": "Microsoft.DataFactory/factories/triggers",
+			"apiVersion": "2018-06-01",
+			"properties": {
+				"annotations": [],
+				"runtimeState": "Stopped",
+				"pipelines": [
+					{
+						"pipelineReference": {
+							"referenceName": "PL_Module_6_Incremental_Copy",
+							"type": "PipelineReference"
+						},
+						"parameters": {}
+					}
+				],
+				"type": "ScheduleTrigger",
+				"typeProperties": {
+					"recurrence": {
+						"frequency": "Day",
+						"interval": 1,
+						"startTime": "2024-12-20T20:05:00",
+						"timeZone": "Belarus Standard Time"
+					}
+				}
+			},
+			"dependsOn": [
+				"[concat(variables('factoryId'), '/pipelines/PL_Module_6_Incremental_Copy')]"
+			]
+		}
+	]
+}

@@ -1,0 +1,6 @@
+{
+	"Global_LogicAppWorkflowURL": {
+		"type": "string",
+		"value": "https://mentoring-key-valult-mp.vault.azure.net/secrets/LogicAppWorkflowURL/62ea8e20bfdc4d42bd4b00786a1b2c29"
+	}
+}

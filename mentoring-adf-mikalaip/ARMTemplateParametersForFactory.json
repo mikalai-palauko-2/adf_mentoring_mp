@@ -1,0 +1,69 @@
+{
+	"$schema": "https://schema.management.azure.com/schemas/2015-01-01/deploymentParameters.json#",
+	"contentVersion": "1.0.0.0",
+	"parameters": {
+		"factoryName": {
+			"value": "mentoring-adf-mikalaip"
+		},
+		"LS_ABLB_Ratings_AustraliaEast_connectionString": {
+			"value": ""
+		},
+		"LS_ASQL_Movies_password": {
+			"value": ""
+		},
+		"TUTORIAL_LS_ABLB_connectionString": {
+			"value": ""
+		},
+		"TUTORIAL_LS_IncrementalCopyDB_password": {
+			"value": ""
+		},
+		"LS_ABLB_mikalaip_properties_typeProperties_sasUri_secretName": {
+			"value": "SAS-URL-Secret"
+		},
+		"LS_ABLB_online_properties_typeProperties_sasUri_secretName": {
+			"value": "SAS-URL-online"
+		},
+		"LS_ADLS_mikalaip_properties_typeProperties_url": {
+			"value": "https://azurementoringdatalake22.dfs.core.windows.net/"
+		},
+		"LS_ASQL_DataMart_properties_typeProperties_server": {
+			"value": "azure-mentoring-mikalaip.database.windows.net"
+		},
+		"LS_ASQL_DataMart_properties_typeProperties_database": {
+			"value": "DataMart"
+		},
+		"LS_ASQL_DataMart_properties_typeProperties_userName": {
+			"value": "mikalaip-admin"
+		},
+		"LS_ASQL_Movies_properties_typeProperties_server": {
+			"value": "azure-mentoring-mikalaip.database.windows.net"
+		},
+		"LS_ASQL_Movies_properties_typeProperties_database": {
+			"value": "movies"
+		},
+		"LS_ASQL_Movies_properties_typeProperties_userName": {
+			"value": "mikalaip-admin"
+		},
+		"LS_KV_mikalaip_properties_typeProperties_baseUrl": {
+			"value": "https://mentoring-key-valult-mp.vault.azure.net/"
+		},
+		"LS_SQL_CinemaTickets_properties_typeProperties_server": {
+			"value": ".\\MSSQLSERVER2022"
+		},
+		"LS_SQL_CinemaTickets_properties_typeProperties_database": {
+			"value": "CinemaTickets"
+		},
+		"LS_SQL_CinemaTickets_properties_typeProperties_userName": {
+			"value": "epam\\mikalai_palauko"
+		},
+		"TUTORIAL_LS_IncrementalCopyDB_properties_typeProperties_server": {
+			"value": "azure-mentoring-mikalaip.database.windows.net"
+		},
+		"TUTORIAL_LS_IncrementalCopyDB_properties_typeProperties_database": {
+			"value": "IncrementalCopyDB"
+		},
+		"TUTORIAL_LS_IncrementalCopyDB_properties_typeProperties_userName": {
+			"value": "mikalaip-admin"
+		}
+	}
+}
