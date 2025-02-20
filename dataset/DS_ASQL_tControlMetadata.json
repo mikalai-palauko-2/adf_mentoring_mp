@@ -1,0 +1,63 @@
+{
+	"name": "DS_ASQL_tControlMetadata",
+	"properties": {
+		"linkedServiceName": {
+			"referenceName": "LS_ASQL_Movies",
+			"type": "LinkedServiceReference"
+		},
+		"annotations": [],
+		"type": "AzureSqlTable",
+		"schema": [
+			{
+				"name": "SourceContainerName",
+				"type": "varchar"
+			},
+			{
+				"name": "SourceFolderName",
+				"type": "varchar"
+			},
+			{
+				"name": "SourceFileName",
+				"type": "varchar"
+			},
+			{
+				"name": "SourceColumnDelimiter",
+				"type": "varchar"
+			},
+			{
+				"name": "SourceEncoding",
+				"type": "varchar"
+			},
+			{
+				"name": "SourceEscapeCharacter",
+				"type": "varchar"
+			},
+			{
+				"name": "SourceQuoteCharacter",
+				"type": "varchar"
+			},
+			{
+				"name": "DestinationSchemaName",
+				"type": "varchar"
+			},
+			{
+				"name": "DestinationTableName",
+				"type": "varchar"
+			},
+			{
+				"name": "CopyDIUValue",
+				"type": "int",
+				"precision": 10
+			},
+			{
+				"name": "CopyMapping",
+				"type": "varchar"
+			}
+		],
+		"typeProperties": {
+			"schema": "etl",
+			"table": "tControlMetadata"
+		}
+	},
+	"type": "Microsoft.DataFactory/factories/datasets"
+}

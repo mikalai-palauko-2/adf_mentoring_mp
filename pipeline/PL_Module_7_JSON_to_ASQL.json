@@ -1,0 +1,211 @@
+{
+	"name": "PL_Module_7_JSON_to_ASQL",
+	"properties": {
+		"activities": [
+			{
+				"name": "Copy JSON to online_purchase",
+				"type": "Copy",
+				"dependsOn": [],
+				"policy": {
+					"timeout": "0.12:00:00",
+					"retry": 0,
+					"retryIntervalInSeconds": 30,
+					"secureOutput": false,
+					"secureInput": false
+				},
+				"userProperties": [],
+				"typeProperties": {
+					"source": {
+						"type": "JsonSource",
+						"additionalColumns": [
+							{
+								"name": "SourceFilename",
+								"value": "$$FILENAME"
+							},
+							{
+								"name": "PipelineId",
+								"value": {
+									"value": "@pipeline().RunId",
+									"type": "Expression"
+								}
+							}
+						],
+						"storeSettings": {
+							"type": "AzureBlobFSReadSettings",
+							"recursive": false,
+							"wildcardFolderPath": "online",
+							"wildcardFileName": "*.json",
+							"enablePartitionDiscovery": false
+						},
+						"formatSettings": {
+							"type": "JsonReadSettings"
+						}
+					},
+					"sink": {
+						"type": "AzureSqlSink",
+						"preCopyScript": "TRUNCATE TABLE [stg].[online_purchase];",
+						"writeBehavior": "insert",
+						"sqlWriterUseTableLock": false,
+						"disableMetricsCollection": false
+					},
+					"enableStaging": false,
+					"translator": {
+						"type": "TabularTranslator",
+						"mappings": [
+							{
+								"source": {
+									"path": "$['serviceName']"
+								},
+								"sink": {
+									"name": "online_service_name",
+									"type": "String"
+								}
+							},
+							{
+								"source": {
+									"path": "$['serviceCode']"
+								},
+								"sink": {
+									"name": "online_service_code",
+									"type": "String"
+								}
+							},
+							{
+								"source": {
+									"path": "$['movieId']"
+								},
+								"sink": {
+									"name": "movie_id",
+									"type": "String"
+								}
+							},
+							{
+								"source": {
+									"path": "$['userId']"
+								},
+								"sink": {
+									"name": "user_id",
+									"type": "String"
+								}
+							},
+							{
+								"source": {
+									"path": "$['price']"
+								},
+								"sink": {
+									"name": "price",
+									"type": "String"
+								}
+							},
+							{
+								"source": {
+									"path": "$['transaction']['id']"
+								},
+								"sink": {
+									"name": "transaction_id",
+									"type": "String"
+								}
+							},
+							{
+								"source": {
+									"path": "$['transaction']['datetime']"
+								},
+								"sink": {
+									"name": "transaction_date",
+									"type": "String"
+								}
+							},
+							{
+								"source": {
+									"path": "$['SourceFilename']"
+								},
+								"sink": {
+									"name": "source_filename",
+									"type": "String"
+								}
+							},
+							{
+								"source": {
+									"path": "$['PipelineId']"
+								},
+								"sink": {
+									"name": "pipelineId",
+									"type": "String"
+								}
+							}
+						]
+					}
+				},
+				"inputs": [
+					{
+						"referenceName": "DS_ADLS_online",
+						"type": "DatasetReference"
+					}
+				],
+				"outputs": [
+					{
+						"referenceName": "DS_ASQL_MoviesDB_online_purchase",
+						"type": "DatasetReference"
+					}
+				]
+			},
+			{
+				"name": "Execute spPopulateOnlineService",
+				"type": "SqlServerStoredProcedure",
+				"dependsOn": [
+					{
+						"activity": "Copy JSON to online_purchase",
+						"dependencyConditions": [
+							"Succeeded"
+						]
+					}
+				],
+				"policy": {
+					"timeout": "0.12:00:00",
+					"retry": 0,
+					"retryIntervalInSeconds": 30,
+					"secureOutput": false,
+					"secureInput": false
+				},
+				"userProperties": [],
+				"typeProperties": {
+					"storedProcedureName": "[dbo].[spPopulateOnlineService]"
+				},
+				"linkedServiceName": {
+					"referenceName": "LS_ASQL_Movies",
+					"type": "LinkedServiceReference"
+				}
+			},
+			{
+				"name": "Execute spPopulateOnlinePurchase",
+				"type": "SqlServerStoredProcedure",
+				"dependsOn": [
+					{
+						"activity": "Execute spPopulateOnlineService",
+						"dependencyConditions": [
+							"Succeeded"
+						]
+					}
+				],
+				"policy": {
+					"timeout": "0.12:00:00",
+					"retry": 0,
+					"retryIntervalInSeconds": 30,
+					"secureOutput": false,
+					"secureInput": false
+				},
+				"userProperties": [],
+				"typeProperties": {
+					"storedProcedureName": "[dbo].[spPopulateOnlinePurchase]"
+				},
+				"linkedServiceName": {
+					"referenceName": "LS_ASQL_Movies",
+					"type": "LinkedServiceReference"
+				}
+			}
+		],
+		"annotations": [],
+		"lastPublishTime": "2024-12-30T14:58:59Z"
+	},
+	"type": "Microsoft.DataFactory/factories/pipelines"
+}

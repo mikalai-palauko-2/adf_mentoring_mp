@@ -1,0 +1,24 @@
+{
+	"name": "LS_ASQL_DataMart",
+	"type": "Microsoft.DataFactory/factories/linkedservices",
+	"properties": {
+		"annotations": [],
+		"type": "AzureSqlDatabase",
+		"typeProperties": {
+			"server": "azure-mentoring-mikalaip.database.windows.net",
+			"database": "DataMart",
+			"encrypt": "mandatory",
+			"trustServerCertificate": false,
+			"authenticationType": "SQL",
+			"userName": "mikalaip-admin",
+			"password": {
+				"type": "AzureKeyVaultSecret",
+				"store": {
+					"referenceName": "LS_KV_mikalaip",
+					"type": "LinkedServiceReference"
+				},
+				"secretName": "AzureSQLAdminPass"
+			}
+		}
+	}
+}

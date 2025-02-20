@@ -1,0 +1,24 @@
+{
+	"name": "TUTORIAL_DS_ABLB_Json",
+	"properties": {
+		"linkedServiceName": {
+			"referenceName": "TUTORIAL_LS_ABLB",
+			"type": "LinkedServiceReference"
+		},
+		"annotations": [],
+		"type": "Json",
+		"typeProperties": {
+			"location": {
+				"type": "AzureBlobStorageLocation",
+				"fileName": {
+					"value": "@CONCAT('Incremental-', pipeline().RunId, '.txt')",
+					"type": "Expression"
+				},
+				"folderPath": "incrementalcopy",
+				"container": "tutorial-incremental-copy"
+			}
+		},
+		"schema": {}
+	},
+	"type": "Microsoft.DataFactory/factories/datasets"
+}

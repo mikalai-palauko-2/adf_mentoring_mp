@@ -1,0 +1,19 @@
+{
+	"name": "DS_ADLS_Movies_Binary",
+	"properties": {
+		"linkedServiceName": {
+			"referenceName": "LS_ADLS_mikalaip",
+			"type": "LinkedServiceReference"
+		},
+		"annotations": [],
+		"type": "Binary",
+		"typeProperties": {
+			"location": {
+				"type": "AzureBlobFSLocation",
+				"folderPath": "movies",
+				"fileSystem": "raw"
+			}
+		}
+	},
+	"type": "Microsoft.DataFactory/factories/datasets"
+}

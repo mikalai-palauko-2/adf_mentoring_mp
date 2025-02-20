@@ -1,0 +1,20 @@
+{
+	"name": "PL_Module_10_Failing_Pipeline",
+	"properties": {
+		"activities": [
+			{
+				"name": "FailForever",
+				"type": "Fail",
+				"dependsOn": [],
+				"userProperties": [],
+				"typeProperties": {
+					"message": "Oops... I failed miserably:(",
+					"errorCode": "5000"
+				}
+			}
+		],
+		"annotations": [],
+		"lastPublishTime": "2025-02-11T10:15:11Z"
+	},
+	"type": "Microsoft.DataFactory/factories/pipelines"
+}

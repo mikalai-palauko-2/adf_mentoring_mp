@@ -1,0 +1,17 @@
+{
+	"name": "mentoring-adf-mikalaip",
+	"properties": {
+		"globalParameters": {
+			"Global_LogicAppWorkflowURL": {
+				"type": "string",
+				"value": "https://mentoring-key-valult-mp.vault.azure.net/secrets/LogicAppWorkflowURL/62ea8e20bfdc4d42bd4b00786a1b2c29"
+			}
+		}
+	},
+	"location": "francecentral",
+	"identity": {
+		"type": "SystemAssigned",
+		"principalId": "eb3884c2-25b4-4771-9172-54280d370a49",
+		"tenantId": "b41b72d0-4e9f-4c26-8a69-f949f367c91d"
+	}
+}

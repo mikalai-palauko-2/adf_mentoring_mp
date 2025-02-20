@@ -1,0 +1,72 @@
+{
+	"name": "PL_TRAN_Module_5_MASTER",
+	"properties": {
+		"activities": [
+			{
+				"name": "Execute - Module_2_Copy_Movies_from_ABLB_to_ADLS",
+				"type": "ExecutePipeline",
+				"dependsOn": [],
+				"policy": {
+					"secureInput": false
+				},
+				"userProperties": [],
+				"typeProperties": {
+					"pipeline": {
+						"referenceName": "PL_TRAN_Module_2_Copy_Movies_from_ABLB_to_ADLS",
+						"type": "PipelineReference"
+					},
+					"waitOnCompletion": true
+				}
+			},
+			{
+				"name": "Execute - Module_5_Load_CSV_to_ASQL",
+				"type": "ExecutePipeline",
+				"dependsOn": [
+					{
+						"activity": "Execute - Module_2_Copy_Movies_from_ABLB_to_ADLS",
+						"dependencyConditions": [
+							"Succeeded"
+						]
+					}
+				],
+				"policy": {
+					"secureInput": false
+				},
+				"userProperties": [],
+				"typeProperties": {
+					"pipeline": {
+						"referenceName": "PL_TRAN_Module_5_Load_CSV_to_ASQL",
+						"type": "PipelineReference"
+					},
+					"waitOnCompletion": true
+				}
+			},
+			{
+				"name": "Execute - Module_5_Archive_Movies",
+				"type": "ExecutePipeline",
+				"dependsOn": [
+					{
+						"activity": "Execute - Module_5_Load_CSV_to_ASQL",
+						"dependencyConditions": [
+							"Succeeded"
+						]
+					}
+				],
+				"policy": {
+					"secureInput": false
+				},
+				"userProperties": [],
+				"typeProperties": {
+					"pipeline": {
+						"referenceName": "PL_DATA_Module_5_Archive_Movies",
+						"type": "PipelineReference"
+					},
+					"waitOnCompletion": true
+				}
+			}
+		],
+		"annotations": [],
+		"lastPublishTime": "2024-12-16T14:40:51Z"
+	},
+	"type": "Microsoft.DataFactory/factories/pipelines"
+}

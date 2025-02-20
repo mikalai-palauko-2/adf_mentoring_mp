@@ -1,0 +1,24 @@
+{
+	"name": "TRIG_Module_6_Daily",
+	"properties": {
+		"annotations": [],
+		"runtimeState": "Stopped",
+		"pipelines": [
+			{
+				"pipelineReference": {
+					"referenceName": "PL_Module_6_Incremental_Copy",
+					"type": "PipelineReference"
+				}
+			}
+		],
+		"type": "ScheduleTrigger",
+		"typeProperties": {
+			"recurrence": {
+				"frequency": "Day",
+				"interval": 1,
+				"startTime": "2024-12-20T20:05:00",
+				"timeZone": "Belarus Standard Time"
+			}
+		}
+	}
+}

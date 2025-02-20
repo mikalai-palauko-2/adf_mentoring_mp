@@ -1,0 +1,28 @@
+{
+	"name": "LS_SQL_CinemaTickets",
+	"type": "Microsoft.DataFactory/factories/linkedservices",
+	"properties": {
+		"annotations": [],
+		"type": "SqlServer",
+		"typeProperties": {
+			"server": ".\\MSSQLSERVER2022",
+			"database": "CinemaTickets",
+			"encrypt": "mandatory",
+			"trustServerCertificate": true,
+			"authenticationType": "Windows",
+			"userName": "epam\\mikalai_palauko",
+			"password": {
+				"type": "AzureKeyVaultSecret",
+				"store": {
+					"referenceName": "LS_KV_mikalaip",
+					"type": "LinkedServiceReference"
+				},
+				"secretName": "LocalSQLServer-WindowsAuth-Pass"
+			}
+		},
+		"connectVia": {
+			"referenceName": "IR-SelfHosted",
+			"type": "IntegrationRuntimeReference"
+		}
+	}
+}

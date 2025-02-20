@@ -1,0 +1,45 @@
+{
+	"name": "DS_ABLB_MoviesCSV",
+	"properties": {
+		"linkedServiceName": {
+			"referenceName": "LS_ABLB_mikalaip",
+			"type": "LinkedServiceReference"
+		},
+		"parameters": {
+			"SourceFile": {
+				"type": "string"
+			}
+		},
+		"annotations": [],
+		"type": "DelimitedText",
+		"typeProperties": {
+			"location": {
+				"type": "AzureBlobStorageLocation",
+				"fileName": {
+					"value": "@dataset().SourceFile",
+					"type": "Expression"
+				},
+				"container": "movies"
+			},
+			"columnDelimiter": ",",
+			"escapeChar": "\\",
+			"firstRowAsHeader": true,
+			"quoteChar": "\""
+		},
+		"schema": [
+			{
+				"name": "cast",
+				"type": "String"
+			},
+			{
+				"name": "crew",
+				"type": "String"
+			},
+			{
+				"name": "id",
+				"type": "String"
+			}
+		]
+	},
+	"type": "Microsoft.DataFactory/factories/datasets"
+}

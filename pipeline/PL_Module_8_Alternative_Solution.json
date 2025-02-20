@@ -1,0 +1,483 @@
+{
+	"name": "PL_Module_8_Alternative_Solution",
+	"properties": {
+		"activities": [
+			{
+				"name": "Populate DimMovie",
+				"type": "Copy",
+				"dependsOn": [],
+				"policy": {
+					"timeout": "0.12:00:00",
+					"retry": 0,
+					"retryIntervalInSeconds": 30,
+					"secureOutput": false,
+					"secureInput": false
+				},
+				"userProperties": [],
+				"typeProperties": {
+					"source": {
+						"type": "AzureSqlSource",
+						"sqlReaderQuery": "SELECT\n    mov.MovieIdNK,\n    mov.Title,\n    mov.ReleaseDate,\n    mov.Runtime,\n    stat.MovieStatusName,\n    GETUTCDATE() AS CreatedDate,\n    GETUTCDATE() AS ModifiedDate\nFROM dbo.tMovies AS mov\nINNER JOIN dbo.tMovieStatus AS stat\n    ON mov.MovieStatusId = stat.MovieStatusId;",
+						"queryTimeout": "02:00:00",
+						"partitionOption": "None"
+					},
+					"sink": {
+						"type": "AzureSqlSink",
+						"preCopyScript": "TRUNCATE TABLE dbo.DimMovie;",
+						"writeBehavior": "insert",
+						"sqlWriterUseTableLock": false,
+						"disableMetricsCollection": false
+					},
+					"enableStaging": false,
+					"translator": {
+						"type": "TabularTranslator",
+						"mappings": [
+							{
+								"source": {
+									"name": "MovieIdNK",
+									"type": "Int32",
+									"physicalType": "int"
+								},
+								"sink": {
+									"name": "MovieIdNK",
+									"type": "Int32",
+									"physicalType": "int"
+								}
+							},
+							{
+								"source": {
+									"name": "Title",
+									"type": "String",
+									"physicalType": "nvarchar"
+								},
+								"sink": {
+									"name": "Title",
+									"type": "String",
+									"physicalType": "nvarchar"
+								}
+							},
+							{
+								"source": {
+									"name": "ReleaseDate",
+									"type": "DateTime",
+									"physicalType": "date"
+								},
+								"sink": {
+									"name": "ReleaseDate",
+									"type": "DateTime",
+									"physicalType": "date"
+								}
+							},
+							{
+								"source": {
+									"name": "Runtime",
+									"type": "Int32",
+									"physicalType": "int"
+								},
+								"sink": {
+									"name": "Runtime",
+									"type": "Int32",
+									"physicalType": "int"
+								}
+							},
+							{
+								"source": {
+									"name": "MovieStatusName",
+									"type": "String",
+									"physicalType": "nvarchar"
+								},
+								"sink": {
+									"name": "MovieStatus",
+									"type": "String",
+									"physicalType": "nvarchar"
+								}
+							},
+							{
+								"source": {
+									"name": "CreatedDate",
+									"type": "DateTime",
+									"physicalType": "datetime"
+								},
+								"sink": {
+									"name": "CreatedDate",
+									"type": "DateTime",
+									"physicalType": "datetime"
+								}
+							},
+							{
+								"source": {
+									"name": "ModifiedDate",
+									"type": "DateTime",
+									"physicalType": "datetime"
+								},
+								"sink": {
+									"name": "ModifiedDate",
+									"type": "DateTime",
+									"physicalType": "datetime"
+								}
+							}
+						],
+						"typeConversion": true,
+						"typeConversionSettings": {
+							"allowDataTruncation": true,
+							"treatBooleanAsNumber": false
+						}
+					}
+				},
+				"inputs": [
+					{
+						"referenceName": "DS_ASQL_MoviesDB_tMovies",
+						"type": "DatasetReference"
+					}
+				],
+				"outputs": [
+					{
+						"referenceName": "DS_ASQL_DataMart_DimMovie",
+						"type": "DatasetReference"
+					}
+				]
+			},
+			{
+				"name": "Populate DimOnlineService",
+				"type": "Copy",
+				"dependsOn": [
+					{
+						"activity": "Populate DimMovie",
+						"dependencyConditions": [
+							"Succeeded"
+						]
+					}
+				],
+				"policy": {
+					"timeout": "0.12:00:00",
+					"retry": 0,
+					"retryIntervalInSeconds": 30,
+					"secureOutput": false,
+					"secureInput": false
+				},
+				"userProperties": [],
+				"typeProperties": {
+					"source": {
+						"type": "AzureSqlSource",
+						"sqlReaderQuery": "SELECT\n    ServiceCode,\n    ServiceName,\n    GETUTCDATE() AS CreatedDate,\n    GETUTCDATE() AS ModifiedDate\nFROM dbo.tOnlineService;",
+						"queryTimeout": "02:00:00",
+						"partitionOption": "None"
+					},
+					"sink": {
+						"type": "AzureSqlSink",
+						"preCopyScript": "TRUNCATE TABLE dbo.DimOnlineService;\n",
+						"writeBehavior": "insert",
+						"sqlWriterUseTableLock": false,
+						"disableMetricsCollection": false
+					},
+					"enableStaging": false,
+					"translator": {
+						"type": "TabularTranslator",
+						"mappings": [
+							{
+								"source": {
+									"name": "ServiceCode",
+									"type": "String",
+									"physicalType": "nvarchar"
+								},
+								"sink": {
+									"name": "ServiceCode",
+									"type": "String",
+									"physicalType": "nvarchar"
+								}
+							},
+							{
+								"source": {
+									"name": "ServiceName",
+									"type": "String",
+									"physicalType": "nvarchar"
+								},
+								"sink": {
+									"name": "ServiceName",
+									"type": "String",
+									"physicalType": "nvarchar"
+								}
+							},
+							{
+								"source": {
+									"name": "CreatedDate",
+									"type": "DateTime",
+									"physicalType": "datetime"
+								},
+								"sink": {
+									"name": "CreatedDate",
+									"type": "DateTime",
+									"physicalType": "datetime"
+								}
+							},
+							{
+								"source": {
+									"name": "ModifiedDate",
+									"type": "DateTime",
+									"physicalType": "datetime"
+								},
+								"sink": {
+									"name": "ModifiedDate",
+									"type": "DateTime",
+									"physicalType": "datetime"
+								}
+							}
+						],
+						"typeConversion": true,
+						"typeConversionSettings": {
+							"allowDataTruncation": true,
+							"treatBooleanAsNumber": false
+						}
+					}
+				},
+				"inputs": [
+					{
+						"referenceName": "DS_ASQL_MoviesDB_tOnlineService",
+						"type": "DatasetReference"
+					}
+				],
+				"outputs": [
+					{
+						"referenceName": "DS_ASQL_DataMart_DimOnlineService",
+						"type": "DatasetReference"
+					}
+				]
+			},
+			{
+				"name": "Populate FactOnlinePurchase",
+				"type": "Copy",
+				"dependsOn": [
+					{
+						"activity": "Populate DimOnlineService",
+						"dependencyConditions": [
+							"Succeeded"
+						]
+					}
+				],
+				"policy": {
+					"timeout": "0.12:00:00",
+					"retry": 0,
+					"retryIntervalInSeconds": 30,
+					"secureOutput": false,
+					"secureInput": false
+				},
+				"userProperties": [],
+				"typeProperties": {
+					"source": {
+						"type": "AzureSqlSource",
+						"sqlReaderQuery": "SELECT\n    year(prch.TransactionDate)*10000 + month(prch.TransactionDate)*100 + day(prch.TransactionDate) AS DateKey,\n    dim_srvc.ServiceKey AS OnlineServiceKey,\n    dim_mov.MovieKey,\n    prch.Price,\n    prch.TransactionId\nFROM dbo.tOnlinePurchase AS prch\nINNER JOIN dbo.tOnlineService AS srvc\n    ON prch.ServiceId = srvc.ServiceId\nINNER JOIN dbo.DataMart_DimOnlineService AS dim_srvc\n    ON srvc.ServiceName = dim_srvc.ServiceName\nINNER JOIN dbo.tMovies AS mov\n    ON prch.MovieId = mov.MovieId\nINNER JOIN dbo.DataMart_DimMovie AS dim_mov\n    ON mov.MovieIdNK = dim_mov.MovieIdNK;\n ",
+						"queryTimeout": "02:00:00",
+						"partitionOption": "None"
+					},
+					"sink": {
+						"type": "AzureSqlSink",
+						"preCopyScript": "TRUNCATE TABLE dbo.FactOnlinePurchase;",
+						"writeBehavior": "insert",
+						"sqlWriterUseTableLock": false,
+						"disableMetricsCollection": false
+					},
+					"enableStaging": false,
+					"translator": {
+						"type": "TabularTranslator",
+						"mappings": [
+							{
+								"source": {
+									"name": "DateKey",
+									"type": "Int32",
+									"physicalType": "int"
+								},
+								"sink": {
+									"name": "DateKey",
+									"type": "Int32",
+									"physicalType": "int"
+								}
+							},
+							{
+								"source": {
+									"name": "OnlineServiceKey",
+									"type": "Int32",
+									"physicalType": "int"
+								},
+								"sink": {
+									"name": "OnlineServiceKey",
+									"type": "Int32",
+									"physicalType": "int"
+								}
+							},
+							{
+								"source": {
+									"name": "MovieKey",
+									"type": "Int32",
+									"physicalType": "int"
+								},
+								"sink": {
+									"name": "MovieKey",
+									"type": "Int32",
+									"physicalType": "int"
+								}
+							},
+							{
+								"source": {
+									"name": "Price",
+									"type": "Decimal",
+									"physicalType": "decimal",
+									"scale": 1,
+									"precision": 4
+								},
+								"sink": {
+									"name": "Price",
+									"type": "Decimal",
+									"physicalType": "decimal",
+									"scale": 1,
+									"precision": 4
+								}
+							},
+							{
+								"source": {
+									"name": "TransactionId",
+									"type": "String",
+									"physicalType": "nvarchar"
+								},
+								"sink": {
+									"name": "TransactionId",
+									"type": "String",
+									"physicalType": "nvarchar"
+								}
+							}
+						],
+						"typeConversion": true,
+						"typeConversionSettings": {
+							"allowDataTruncation": true,
+							"treatBooleanAsNumber": false
+						}
+					}
+				},
+				"inputs": [
+					{
+						"referenceName": "DS_ASQL_MoviesDB_tOnlinePurchase",
+						"type": "DatasetReference"
+					}
+				],
+				"outputs": [
+					{
+						"referenceName": "DS_ASQL_DataMart_FactOnlinePurchase",
+						"type": "DatasetReference"
+					}
+				]
+			},
+			{
+				"name": "Populate FactOnlinePurchase_MonthlySnapshot",
+				"type": "Copy",
+				"dependsOn": [
+					{
+						"activity": "Populate DimOnlineService",
+						"dependencyConditions": [
+							"Succeeded"
+						]
+					}
+				],
+				"policy": {
+					"timeout": "0.12:00:00",
+					"retry": 0,
+					"retryIntervalInSeconds": 30,
+					"secureOutput": false,
+					"secureInput": false
+				},
+				"userProperties": [],
+				"typeProperties": {
+					"source": {
+						"type": "AzureSqlSource",
+						"sqlReaderQuery": "WITH CTE_AllSales AS (   \n    SELECT\n        year(prch.TransactionDate)*10000 + month(prch.TransactionDate)*100 AS MonthKey,\n        dim_srvc.ServiceKey AS OnlineServiceKey,\n        prch.Price,\n        prch.TransactionId\n    FROM dbo.tOnlinePurchase AS prch\n    INNER JOIN dbo.tOnlineService AS srvc\n        ON prch.ServiceId = srvc.ServiceId\n    INNER JOIN dbo.DataMart_DimOnlineService AS dim_srvc\n        ON srvc.ServiceName = dim_srvc.ServiceName\n)\nSELECT\n    MonthKey,\n    OnlineServiceKey,\n    SUM(Price) AS PurchaseAmount,\n    COUNT(Price) AS PurchaseQuantity\nFROM CTE_AllSales\nGROUP BY MonthKey, OnlineServiceKey;\n ",
+						"queryTimeout": "02:00:00",
+						"partitionOption": "None"
+					},
+					"sink": {
+						"type": "AzureSqlSink",
+						"preCopyScript": "TRUNCATE TABLE dbo.FactOnlinePurchase_MonthlySnapshot;",
+						"writeBehavior": "insert",
+						"sqlWriterUseTableLock": false,
+						"disableMetricsCollection": false
+					},
+					"enableStaging": false,
+					"translator": {
+						"type": "TabularTranslator",
+						"mappings": [
+							{
+								"source": {
+									"name": "MonthKey",
+									"type": "Int32",
+									"physicalType": "int"
+								},
+								"sink": {
+									"name": "MonthKey",
+									"type": "Int32",
+									"physicalType": "int"
+								}
+							},
+							{
+								"source": {
+									"name": "OnlineServiceKey",
+									"type": "Int32",
+									"physicalType": "int"
+								},
+								"sink": {
+									"name": "OnlineServiceKey",
+									"type": "Int32",
+									"physicalType": "int"
+								}
+							},
+							{
+								"source": {
+									"name": "PurchaseAmount",
+									"type": "Decimal",
+									"physicalType": "decimal",
+									"scale": 1,
+									"precision": 38
+								},
+								"sink": {
+									"name": "PurchaseAmount",
+									"type": "Decimal",
+									"physicalType": "decimal",
+									"scale": 1,
+									"precision": 10
+								}
+							},
+							{
+								"source": {
+									"name": "PurchaseQuantity",
+									"type": "Int32",
+									"physicalType": "int"
+								},
+								"sink": {
+									"name": "PurchaseQuantity",
+									"type": "Int32",
+									"physicalType": "int"
+								}
+							}
+						],
+						"typeConversion": true,
+						"typeConversionSettings": {
+							"allowDataTruncation": true,
+							"treatBooleanAsNumber": false
+						}
+					}
+				},
+				"inputs": [
+					{
+						"referenceName": "DS_ASQL_MoviesDB_tOnlinePurchase",
+						"type": "DatasetReference"
+					}
+				],
+				"outputs": [
+					{
+						"referenceName": "DS_ASQL_DataMart_FactOnlinePurchase_MonthlySnapshot",
+						"type": "DatasetReference"
+					}
+				]
+			}
+		],
+		"annotations": [],
+		"lastPublishTime": "2025-01-30T17:57:41Z"
+	},
+	"type": "Microsoft.DataFactory/factories/pipelines"
+}

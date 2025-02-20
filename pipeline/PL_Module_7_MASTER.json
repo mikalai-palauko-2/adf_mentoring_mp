@@ -1,0 +1,72 @@
+{
+	"name": "PL_Module_7_MASTER",
+	"properties": {
+		"activities": [
+			{
+				"name": "PL_Module_7_Incremental_Copy_Files",
+				"type": "ExecutePipeline",
+				"dependsOn": [],
+				"policy": {
+					"secureInput": false
+				},
+				"userProperties": [],
+				"typeProperties": {
+					"pipeline": {
+						"referenceName": "PL_Module_7_Incremental_Copy_Files",
+						"type": "PipelineReference"
+					},
+					"waitOnCompletion": true
+				}
+			},
+			{
+				"name": "PL_Module_7_JSON_to_ASQL",
+				"type": "ExecutePipeline",
+				"dependsOn": [
+					{
+						"activity": "PL_Module_7_Incremental_Copy_Files",
+						"dependencyConditions": [
+							"Succeeded"
+						]
+					}
+				],
+				"policy": {
+					"secureInput": false
+				},
+				"userProperties": [],
+				"typeProperties": {
+					"pipeline": {
+						"referenceName": "PL_Module_7_JSON_to_ASQL",
+						"type": "PipelineReference"
+					},
+					"waitOnCompletion": true
+				}
+			},
+			{
+				"name": "PL_Module_7_Archive_online",
+				"type": "ExecutePipeline",
+				"dependsOn": [
+					{
+						"activity": "PL_Module_7_JSON_to_ASQL",
+						"dependencyConditions": [
+							"Succeeded"
+						]
+					}
+				],
+				"policy": {
+					"secureInput": false
+				},
+				"userProperties": [],
+				"typeProperties": {
+					"pipeline": {
+						"referenceName": "PL_Module_7_Archive_online",
+						"type": "PipelineReference"
+					},
+					"waitOnCompletion": true
+				}
+			}
+		],
+		"annotations": [],
+		"lastPublishTime": "2024-12-30T15:01:48Z"
+	},
+	"type": "Microsoft.DataFactory/factories/pipelines"
+}

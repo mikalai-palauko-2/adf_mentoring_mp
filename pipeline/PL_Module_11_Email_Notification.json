@@ -1,0 +1,138 @@
+{
+	"name": "PL_Module_11_Email_Notification",
+	"properties": {
+		"activities": [
+			{
+				"name": "Get LogicApp URL",
+				"type": "WebActivity",
+				"dependsOn": [],
+				"policy": {
+					"timeout": "0.12:00:00",
+					"retry": 0,
+					"retryIntervalInSeconds": 30,
+					"secureOutput": false,
+					"secureInput": false
+				},
+				"userProperties": [],
+				"typeProperties": {
+					"method": "GET",
+					"url": {
+						"value": "@concat(pipeline().globalParameters.Global_LogicAppWorkflowURL, '?api-version=7.0')",
+						"type": "Expression"
+					},
+					"authentication": {
+						"type": "MSI",
+						"resource": "https://vault.azure.net"
+					}
+				}
+			},
+			{
+				"name": "Trigger LogicApp on Success",
+				"type": "WebActivity",
+				"dependsOn": [
+					{
+						"activity": "Get LogicApp URL",
+						"dependencyConditions": [
+							"Succeeded"
+						]
+					},
+					{
+						"activity": "Execute PL_Module_9_Metadata-driven_ETL",
+						"dependencyConditions": [
+							"Succeeded"
+						]
+					}
+				],
+				"policy": {
+					"timeout": "0.12:00:00",
+					"retry": 0,
+					"retryIntervalInSeconds": 30,
+					"secureOutput": false,
+					"secureInput": false
+				},
+				"userProperties": [],
+				"typeProperties": {
+					"method": "POST",
+					"url": {
+						"value": "@activity('Get LogicApp URL').output.value",
+						"type": "Expression"
+					},
+					"body": {
+						"value": "{\n    \"message\" : \"Data Factory: @{pipeline().DataFactory}.\n    Pipeline Run ID: @{pipeline().RunId}.\",\n    \"pipelineName\" : \"@{pipeline().Pipeline}\",\n    \"pipelineStatus\" : \"@{activity('Execute PL_Module_9_Metadata-driven_ETL').status}\",\n    \"receiver\" : \"@{pipeline().parameters.receiver}\"\n}",
+						"type": "Expression"
+					}
+				}
+			},
+			{
+				"name": "Execute PL_Module_9_Metadata-driven_ETL",
+				"type": "ExecutePipeline",
+				"dependsOn": [],
+				"policy": {
+					"secureInput": false
+				},
+				"userProperties": [],
+				"typeProperties": {
+					"pipeline": {
+						"referenceName": "PL_Module_9_Metadata-driven_ETL",
+						"type": "PipelineReference"
+					},
+					"waitOnCompletion": true
+				}
+			},
+			{
+				"name": "Trigger LogicApp on Failure",
+				"type": "WebActivity",
+				"dependsOn": [
+					{
+						"activity": "Get LogicApp URL",
+						"dependencyConditions": [
+							"Succeeded"
+						]
+					},
+					{
+						"activity": "Execute PL_Module_9_Metadata-driven_ETL",
+						"dependencyConditions": [
+							"Failed"
+						]
+					}
+				],
+				"policy": {
+					"timeout": "0.12:00:00",
+					"retry": 0,
+					"retryIntervalInSeconds": 30,
+					"secureOutput": false,
+					"secureInput": false
+				},
+				"userProperties": [],
+				"typeProperties": {
+					"method": "POST",
+					"url": {
+						"value": "@activity('Get LogicApp URL').output.value",
+						"type": "Expression"
+					},
+					"body": {
+						"value": "{\n    \"message\" : \"Data Factory: @{pipeline().DataFactory}.\n    Pipeline Run ID: @{pipeline().RunId}.    \n    Errors encountered: @{activity('Execute PL_Module_9_Metadata-driven_ETL').error.message}\",\n    \"pipelineName\" : \"@{pipeline().Pipeline}\",\n    \"pipelineStatus\" : \"@{activity('Execute PL_Module_9_Metadata-driven_ETL').status}\",\n    \"receiver\" : \"@{pipeline().parameters.receiver}\"\n}",
+						"type": "Expression"
+					}
+				}
+			}
+		],
+		"parameters": {
+			"receiver": {
+				"type": "string",
+				"defaultValue": "mikalai_palauko@epam.com"
+			}
+		},
+		"variables": {
+			"DebugVariableValue": {
+				"type": "String"
+			},
+			"NewVariable": {
+				"type": "String"
+			}
+		},
+		"annotations": [],
+		"lastPublishTime": "2025-02-17T14:57:01Z"
+	},
+	"type": "Microsoft.DataFactory/factories/pipelines"
+}

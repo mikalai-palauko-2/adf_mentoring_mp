@@ -1,0 +1,19 @@
+{
+	"name": "DS_ABLB_online",
+	"properties": {
+		"linkedServiceName": {
+			"referenceName": "LS_ABLB_online",
+			"type": "LinkedServiceReference"
+		},
+		"annotations": [],
+		"type": "Json",
+		"typeProperties": {
+			"location": {
+				"type": "AzureBlobStorageLocation",
+				"container": "online"
+			}
+		},
+		"schema": {}
+	},
+	"type": "Microsoft.DataFactory/factories/datasets"
+}

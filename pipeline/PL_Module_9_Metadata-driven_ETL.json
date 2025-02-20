@@ -1,0 +1,403 @@
+{
+	"name": "PL_Module_9_Metadata-driven_ETL",
+	"properties": {
+		"activities": [
+			{
+				"name": "Read Metadata Table",
+				"type": "Lookup",
+				"dependsOn": [],
+				"policy": {
+					"timeout": "0.12:00:00",
+					"retry": 0,
+					"retryIntervalInSeconds": 30,
+					"secureOutput": false,
+					"secureInput": false
+				},
+				"userProperties": [],
+				"typeProperties": {
+					"source": {
+						"type": "AzureSqlSource",
+						"queryTimeout": "02:00:00",
+						"partitionOption": "None"
+					},
+					"dataset": {
+						"referenceName": "DS_ASQL_tControlMetadata",
+						"type": "DatasetReference"
+					},
+					"firstRowOnly": false
+				}
+			},
+			{
+				"name": "Copy CSV to Table - metadata based",
+				"type": "ForEach",
+				"dependsOn": [
+					{
+						"activity": "Read Metadata Table",
+						"dependencyConditions": [
+							"Succeeded"
+						]
+					}
+				],
+				"userProperties": [],
+				"typeProperties": {
+					"items": {
+						"value": "@activity('Read Metadata Table').output.value",
+						"type": "Expression"
+					},
+					"activities": [
+						{
+							"name": "Copy from CSV to Table",
+							"type": "Copy",
+							"dependsOn": [],
+							"policy": {
+								"timeout": "0.12:00:00",
+								"retry": 0,
+								"retryIntervalInSeconds": 30,
+								"secureOutput": false,
+								"secureInput": false
+							},
+							"userProperties": [],
+							"typeProperties": {
+								"source": {
+									"type": "DelimitedTextSource",
+									"storeSettings": {
+										"type": "AzureBlobFSReadSettings",
+										"recursive": false,
+										"wildcardFolderPath": {
+											"value": "@item().SourceFolderName",
+											"type": "Expression"
+										},
+										"wildcardFileName": {
+											"value": "@item().SourceFileName",
+											"type": "Expression"
+										},
+										"enablePartitionDiscovery": false
+									},
+									"formatSettings": {
+										"type": "DelimitedTextReadSettings"
+									}
+								},
+								"sink": {
+									"type": "AzureSqlSink",
+									"preCopyScript": {
+										"value": "@concat('TRUNCATE TABLE ', item().DestinationSchemaName, '.', item().DestinationTableName)",
+										"type": "Expression"
+									},
+									"writeBehavior": "insert",
+									"sqlWriterUseTableLock": false
+								},
+								"enableStaging": false,
+								"dataIntegrationUnits": {
+									"value": "@item().CopyDIUValue",
+									"type": "Expression"
+								},
+								"translator": {
+									"value": "@item().CopyMapping",
+									"type": "Expression"
+								}
+							},
+							"inputs": [
+								{
+									"referenceName": "DS_ADLS_MetadataDriven",
+									"type": "DatasetReference",
+									"parameters": {
+										"SrcContainer": {
+											"value": "@item().SourceContainerName",
+											"type": "Expression"
+										},
+										"SrcFolder": {
+											"value": "@item().SourceFolderName",
+											"type": "Expression"
+										},
+										"SrcFile": {
+											"value": "@item().SourceFileName",
+											"type": "Expression"
+										},
+										"SrcDelimiter": {
+											"value": "@item().SourceColumnDelimiter",
+											"type": "Expression"
+										},
+										"SrcEncoding": {
+											"value": "@item().SourceEncoding",
+											"type": "Expression"
+										},
+										"SrcEscape": {
+											"value": "@item().SourceEscapeCharacter",
+											"type": "Expression"
+										},
+										"SrcQuote": {
+											"value": "@item().SourceQuoteCharacter",
+											"type": "Expression"
+										},
+										"DstSchema": {
+											"value": "@item().DestinationSchemaName",
+											"type": "Expression"
+										},
+										"DstTable": {
+											"value": "@item().DestinationTableName",
+											"type": "Expression"
+										},
+										"CopyDIU": {
+											"value": "@item().CopyDIUValue",
+											"type": "Expression"
+										},
+										"CopyMapping": {
+											"value": "@item().CopyMapping",
+											"type": "Expression"
+										}
+									}
+								}
+							],
+							"outputs": [
+								{
+									"referenceName": "DS_ASQL_MetadataDriven",
+									"type": "DatasetReference",
+									"parameters": {
+										"DstSchema": {
+											"value": "@concat(item().DestinationSchemaName, '')",
+											"type": "Expression"
+										},
+										"DstTable": {
+											"value": "@item().DestinationTableName",
+											"type": "Expression"
+										}
+									}
+								}
+							]
+						},
+						{
+							"name": "Log CopyActivity Info",
+							"type": "SqlServerStoredProcedure",
+							"dependsOn": [
+								{
+									"activity": "Copy from CSV to Table",
+									"dependencyConditions": [
+										"Succeeded"
+									]
+								}
+							],
+							"policy": {
+								"timeout": "0.12:00:00",
+								"retry": 0,
+								"retryIntervalInSeconds": 30,
+								"secureOutput": false,
+								"secureInput": false
+							},
+							"userProperties": [],
+							"typeProperties": {
+								"storedProcedureName": "[etl_wrong_schema].[sp_LogCopyActivity]",
+								"storedProcedureParameters": {
+									"ActivityName": {
+										"value": "Copy from CSV to Table",
+										"type": "String"
+									},
+									"ActivityOutput": {
+										"value": {
+											"value": "@string(activity('Copy from CSV to Table').output)",
+											"type": "Expression"
+										},
+										"type": "String"
+									},
+									"ActivityRunID": {
+										"value": {
+											"value": "@activity('Copy from CSV to Table').ActivityRunId",
+											"type": "Expression"
+										},
+										"type": "String"
+									},
+									"PipelineRunID": {
+										"value": {
+											"value": "@pipeline().RunId",
+											"type": "Expression"
+										},
+										"type": "String"
+									}
+								}
+							},
+							"linkedServiceName": {
+								"referenceName": "LS_ASQL_Movies",
+								"type": "LinkedServiceReference"
+							}
+						},
+						{
+							"name": "Log Error in Logging Activity",
+							"type": "SqlServerStoredProcedure",
+							"dependsOn": [
+								{
+									"activity": "Log CopyActivity Info",
+									"dependencyConditions": [
+										"Failed"
+									]
+								}
+							],
+							"policy": {
+								"timeout": "0.12:00:00",
+								"retry": 0,
+								"retryIntervalInSeconds": 30,
+								"secureOutput": false,
+								"secureInput": false
+							},
+							"userProperties": [],
+							"typeProperties": {
+								"storedProcedureName": "[etl].[sp_LogError]",
+								"storedProcedureParameters": {
+									"ActivityName": {
+										"value": "Log CopyActivity Info",
+										"type": "String"
+									},
+									"ErrorDatetime": {
+										"value": {
+											"value": "@utcNow()",
+											"type": "Expression"
+										},
+										"type": "DateTime"
+									},
+									"ErrorDescription": {
+										"value": {
+											"value": "@string(activity('Log CopyActivity Info').error)",
+											"type": "Expression"
+										},
+										"type": "String"
+									},
+									"PipelineName": {
+										"value": {
+											"value": "@pipeline().Pipeline",
+											"type": "Expression"
+										},
+										"type": "String"
+									},
+									"PipelineRunID": {
+										"value": {
+											"value": "@pipeline().RunId",
+											"type": "Expression"
+										},
+										"type": "String"
+									}
+								}
+							},
+							"linkedServiceName": {
+								"referenceName": "LS_ASQL_Movies",
+								"type": "LinkedServiceReference"
+							}
+						},
+						{
+							"name": "Log Error in Copy Activity",
+							"type": "SqlServerStoredProcedure",
+							"dependsOn": [
+								{
+									"activity": "Copy from CSV to Table",
+									"dependencyConditions": [
+										"Failed"
+									]
+								}
+							],
+							"policy": {
+								"timeout": "0.12:00:00",
+								"retry": 0,
+								"retryIntervalInSeconds": 30,
+								"secureOutput": false,
+								"secureInput": false
+							},
+							"userProperties": [],
+							"typeProperties": {
+								"storedProcedureName": "[etl].[sp_LogError]",
+								"storedProcedureParameters": {
+									"ActivityName": {
+										"value": "Copy from CSV to Table",
+										"type": "String"
+									},
+									"ErrorDatetime": {
+										"value": {
+											"value": "@utcNow()",
+											"type": "Expression"
+										},
+										"type": "Datetime"
+									},
+									"ErrorDescription": {
+										"value": {
+											"value": "@string(activity('Copy from CSV to Table').error)",
+											"type": "Expression"
+										},
+										"type": "String"
+									},
+									"PipelineName": {
+										"value": {
+											"value": "@pipeline().Pipeline",
+											"type": "Expression"
+										},
+										"type": "String"
+									},
+									"PipelineRunID": {
+										"value": {
+											"value": "@pipeline().RunId",
+											"type": "Expression"
+										},
+										"type": "String"
+									}
+								}
+							},
+							"linkedServiceName": {
+								"referenceName": "LS_ASQL_Movies",
+								"type": "LinkedServiceReference"
+							}
+						}
+					]
+				}
+			},
+			{
+				"name": "Log Pipeline Info",
+				"type": "SqlServerStoredProcedure",
+				"dependsOn": [
+					{
+						"activity": "Copy CSV to Table - metadata based",
+						"dependencyConditions": [
+							"Succeeded"
+						]
+					}
+				],
+				"policy": {
+					"timeout": "0.12:00:00",
+					"retry": 0,
+					"retryIntervalInSeconds": 30,
+					"secureOutput": false,
+					"secureInput": false
+				},
+				"userProperties": [],
+				"typeProperties": {
+					"storedProcedureName": "[etl].[sp_LogPipeline]",
+					"storedProcedureParameters": {
+						"PipelineName": {
+							"value": {
+								"value": "@pipeline().Pipeline",
+								"type": "Expression"
+							},
+							"type": "String"
+						},
+						"PipelineRunID": {
+							"value": {
+								"value": "@pipeline().RunId",
+								"type": "Expression"
+							},
+							"type": "String"
+						}
+					}
+				},
+				"linkedServiceName": {
+					"referenceName": "LS_ASQL_Movies",
+					"type": "LinkedServiceReference"
+				}
+			}
+		],
+		"variables": {
+			"DebugVariableValue": {
+				"type": "String"
+			},
+			"NewVariable": {
+				"type": "String"
+			}
+		},
+		"annotations": [],
+		"lastPublishTime": "2025-02-17T14:57:00Z"
+	},
+	"type": "Microsoft.DataFactory/factories/pipelines"
+}

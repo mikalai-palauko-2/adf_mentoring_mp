@@ -1,0 +1,95 @@
+{
+	"name": "DS_ADLS_MetadataDriven",
+	"properties": {
+		"linkedServiceName": {
+			"referenceName": "LS_ADLS_mikalaip",
+			"type": "LinkedServiceReference"
+		},
+		"parameters": {
+			"SrcContainer": {
+				"type": "string"
+			},
+			"SrcFolder": {
+				"type": "string"
+			},
+			"SrcFile": {
+				"type": "string"
+			},
+			"SrcDelimiter": {
+				"type": "string"
+			},
+			"SrcEncoding": {
+				"type": "string"
+			},
+			"SrcEscape": {
+				"type": "string"
+			},
+			"SrcQuote": {
+				"type": "string"
+			},
+			"DstSchema": {
+				"type": "string"
+			},
+			"DstTable": {
+				"type": "string"
+			},
+			"CopyDIU": {
+				"type": "int"
+			},
+			"CopyMapping": {
+				"type": "string"
+			}
+		},
+		"annotations": [],
+		"type": "DelimitedText",
+		"typeProperties": {
+			"location": {
+				"type": "AzureBlobFSLocation",
+				"fileName": {
+					"value": "@dataset().SrcFile",
+					"type": "Expression"
+				},
+				"folderPath": {
+					"value": "@dataset().SrcFolder",
+					"type": "Expression"
+				},
+				"fileSystem": {
+					"value": "@dataset().SrcContainer",
+					"type": "Expression"
+				}
+			},
+			"columnDelimiter": {
+				"value": "@dataset().SrcDelimiter",
+				"type": "Expression"
+			},
+			"encodingName": {
+				"value": "@dataset().SrcEncoding",
+				"type": "Expression"
+			},
+			"escapeChar": {
+				"value": "@dataset().SrcEscape",
+				"type": "Expression"
+			},
+			"firstRowAsHeader": true,
+			"quoteChar": {
+				"value": "@dataset().SrcQuote",
+				"type": "Expression"
+			}
+		},
+		"schema": [
+			{
+				"name": "cast",
+				"type": "String"
+			},
+			{
+				"name": "crew",
+				"type": "String"
+			},
+			{
+				"name": "id",
+				"type": "String"
+			}
+		]
+	},
+	"type": "Microsoft.DataFactory/factories/datasets"
+}

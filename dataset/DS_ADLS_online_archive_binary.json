@@ -1,0 +1,19 @@
+{
+	"name": "DS_ADLS_online_archive_binary",
+	"properties": {
+		"linkedServiceName": {
+			"referenceName": "LS_ADLS_mikalaip",
+			"type": "LinkedServiceReference"
+		},
+		"annotations": [],
+		"type": "Binary",
+		"typeProperties": {
+			"location": {
+				"type": "AzureBlobFSLocation",
+				"folderPath": "online/archive",
+				"fileSystem": "raw"
+			}
+		}
+	},
+	"type": "Microsoft.DataFactory/factories/datasets"
+}
